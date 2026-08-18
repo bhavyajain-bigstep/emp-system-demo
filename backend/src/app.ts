@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import attendanceRoutes from "./routes/attendance.route";
 
 const app = express();
 
@@ -15,9 +16,11 @@ app.use(express.json());
 app.get("/api/v1/health", (_req, res) => {
   res.status(200).json({
     success: true,
-    message: "Employee Leave Management API is running"
+    message: "Employee Leave Management API is running",
   });
 });
+
+app.use(attendanceRoutes);
 
 // 404 handler
 app.use((_req, res) => {
@@ -25,8 +28,8 @@ app.use((_req, res) => {
     success: false,
     error: {
       code: "ROUTE_NOT_FOUND",
-      message: "Route not found"
-    }
+      message: "Route not found",
+    },
   });
 });
 
