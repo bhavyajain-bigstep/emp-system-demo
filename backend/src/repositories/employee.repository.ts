@@ -97,3 +97,12 @@ export const updateEmployee = async (
       "name"
     );
 };
+
+export const countActiveEmployeesInDepartment = async (
+  departmentId: string
+): Promise<number> => {
+  return Employee.countDocuments({
+    departmentId,
+    status: "ACTIVE",
+  });
+};
