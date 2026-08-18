@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
-
+import leaveBalanceRoutes from "./routes/leave-balance.routes";
 import { swaggerSpec } from "./config/swagger";
 import attendanceRoutes from "./routes/attendance.route";
 import authRoutes from "./routes/auth.routes";
@@ -25,6 +25,10 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  "/api/v1/leave-balances",
+  leaveBalanceRoutes
+);
 
 app.use("/api/v1/attendance", attendanceRoutes);
 
