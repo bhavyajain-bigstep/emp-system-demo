@@ -1,4 +1,7 @@
-import bcrypt from 'bcrypt-ts';
+import {
+  compare,hash
+} from "bcrypt-ts";
+import { Types } from "mongoose";
 
 import {
   createEmployee,
@@ -23,10 +26,23 @@ interface CreateEmployeeInput {
   timezone: string;
 }
 
+interface CreateEmployeeData {
+  employeeCode: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: "EMPLOYEE" | "MANAGER" | "HR" | "ADMIN";
+  managerId?: Types.ObjectId;
+  departmentId?: Types.ObjectId;
+  joiningDate: Date;
+  timezone: string;
+}
+
 export const createEmployeeService = async (
   data: CreateEmployeeInput
 ) => {
-  const existingEmail = await findEmployeeByEmail(data.email);
+  const existingEmail =
+    await findEmployeeByEmail(data.email);
 
   if (existingEmail) {
     throw new AppError(
@@ -36,9 +52,10 @@ export const createEmployeeService = async (
     );
   }
 
-  const existingCode = await findEmployeeByCode(
-    data.employeeCode
-  );
+  const existingCode =
+    await findEmployeeByCode(
+      data.employeeCode
+    );
 
   if (existingCode) {
     throw new AppError(
@@ -48,26 +65,74 @@ export const createEmployeeService = async (
     );
   }
 
-  if (data.managerId === undefined && data.role === "EMPLOYEE") {
-    // Manager can be optional depending on your final business rules.
-  }
+  const passwordHash =
+    await hash(
+      data.password,
+      12
+    );
 
-  const passwordHash = await bcrypt.hash(
-    data.password,
-    12
-  );
-
-  const employee = await createEmployee({
+  const employeeData: CreateEmployeeData = {
     employeeCode: data.employeeCode,
     name: data.name,
     email: data.email,
     passwordHash,
     role: data.role,
-    managerId: data.managerId as any,
-    departmentId: data.departmentId as any,
-    joiningDate: new Date(data.joiningDate),
+    joiningDate: new Date(
+      data.joiningDate
+    ),
     timezone: data.timezone,
-  });
+  };
+
+  /*
+   * Convert managerId string
+   * to MongoDB ObjectId.
+   */
+  if (data.managerId !== undefined) {
+    if (
+      !Types.ObjectId.isValid(
+        data.managerId
+      )
+    ) {
+      throw new AppError(
+        "Invalid manager ID",
+        400,
+        "INVALID_MANAGER_ID"
+      );
+    }
+
+    employeeData.managerId =
+      new Types.ObjectId(
+        data.managerId
+      );
+  }
+
+  /*
+   * Convert departmentId string
+   * to MongoDB ObjectId.
+   */
+  if (data.departmentId !== undefined) {
+    if (
+      !Types.ObjectId.isValid(
+        data.departmentId
+      )
+    ) {
+      throw new AppError(
+        "Invalid department ID",
+        400,
+        "INVALID_DEPARTMENT_ID"
+      );
+    }
+
+    employeeData.departmentId =
+      new Types.ObjectId(
+        data.departmentId
+      );
+  }
+
+  const employee =
+    await createEmployee(
+      employeeData
+    );
 
   return employee;
 };
@@ -75,7 +140,16 @@ export const createEmployeeService = async (
 export const getEmployeeService = async (
   id: string
 ) => {
-  const employee = await findEmployeeById(id);
+  if (!Types.ObjectId.isValid(id)) {
+    throw new AppError(
+      "Invalid employee ID",
+      400,
+      "INVALID_EMPLOYEE_ID"
+    );
+  }
+
+  const employee =
+    await findEmployeeById(id);
 
   if (!employee) {
     throw new AppError(
@@ -94,37 +168,85 @@ export const getEmployeesService = async (
   departmentId?: string,
   status?: string
 ) => {
-  const filter: Record<string, unknown> = {};
+  const filter: Record<
+    string,
+    unknown
+  > = {};
 
-  if (departmentId) {
-    filter.departmentId = departmentId;
+  if (
+    departmentId !== undefined
+  ) {
+    if (
+      !Types.ObjectId.isValid(
+        departmentId
+      )
+    ) {
+      throw new AppError(
+        "Invalid department ID",
+        400,
+        "INVALID_DEPARTMENT_ID"
+      );
+    }
+
+    filter.departmentId =
+      new Types.ObjectId(
+        departmentId
+      );
   }
 
   if (status) {
     filter.status = status;
   }
 
-  const skip = (page - 1) * limit;
+  const skip =
+    (page - 1) * limit;
 
-  const result = await findEmployees(
-    filter,
-    skip,
-    limit
-  );
+  const result =
+    await findEmployees(
+      filter,
+      skip,
+      limit
+    );
 
   return {
     ...result,
     page,
     limit,
-    totalPages: Math.ceil(result.total / limit),
+    totalPages:
+      Math.ceil(
+        result.total / limit
+      ),
   };
 };
 
 export const updateEmployeeService = async (
   id: string,
-  data: any
+  data: {
+    name?: string;
+    role?:
+      | "EMPLOYEE"
+      | "MANAGER"
+      | "HR"
+      | "ADMIN";
+    managerId?: string;
+    departmentId?: string;
+    timezone?: string;
+    status?:
+      | "ACTIVE"
+      | "INACTIVE"
+      | "SUSPENDED";
+  }
 ) => {
-  const employee = await findEmployeeById(id);
+  if (!Types.ObjectId.isValid(id)) {
+    throw new AppError(
+      "Invalid employee ID",
+      400,
+      "INVALID_EMPLOYEE_ID"
+    );
+  }
+
+  const employee =
+    await findEmployeeById(id);
 
   if (!employee) {
     throw new AppError(
@@ -134,10 +256,90 @@ export const updateEmployeeService = async (
     );
   }
 
-  const updatedEmployee = await updateEmployee(
-    id,
-    data
-  );
+  const updateData: {
+    name?: string;
+    role?:
+      | "EMPLOYEE"
+      | "MANAGER"
+      | "HR"
+      | "ADMIN";
+    managerId?: Types.ObjectId;
+    departmentId?: Types.ObjectId;
+    timezone?: string;
+    status?:
+      | "ACTIVE"
+      | "INACTIVE"
+      | "SUSPENDED";
+  } = {};
 
-  return updatedEmployee;
+  if (data.name !== undefined) {
+    updateData.name = data.name;
+  }
+
+  if (data.role !== undefined) {
+    updateData.role = data.role;
+  }
+
+  if (
+    data.timezone !== undefined
+  ) {
+    updateData.timezone =
+      data.timezone;
+  }
+
+  if (data.status !== undefined) {
+    updateData.status =
+      data.status;
+  }
+
+  /*
+   * Convert managerId.
+   */
+  if (data.managerId !== undefined) {
+    if (
+      !Types.ObjectId.isValid(
+        data.managerId
+      )
+    ) {
+      throw new AppError(
+        "Invalid manager ID",
+        400,
+        "INVALID_MANAGER_ID"
+      );
+    }
+
+    updateData.managerId =
+      new Types.ObjectId(
+        data.managerId
+      );
+  }
+
+  /*
+   * Convert departmentId.
+   */
+  if (
+    data.departmentId !== undefined
+  ) {
+    if (
+      !Types.ObjectId.isValid(
+        data.departmentId
+      )
+    ) {
+      throw new AppError(
+        "Invalid department ID",
+        400,
+        "INVALID_DEPARTMENT_ID"
+      );
+    }
+
+    updateData.departmentId =
+      new Types.ObjectId(
+        data.departmentId
+      );
+  }
+
+  return updateEmployee(
+    id,
+    updateData
+  );
 };

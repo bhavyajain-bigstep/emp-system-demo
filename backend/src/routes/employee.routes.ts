@@ -14,20 +14,35 @@ import {
   updateEmployeeSchema,
 } from "../validators/employee.validator";
 
+import { authenticate } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/role.middleware";
+
 const router = Router();
 
-router.get("/", getEmployees);
+router.use(authenticate);
 
-router.get("/:id", getEmployee);
+router.get(
+  "/",
+  authorize("HR", "ADMIN"),
+  getEmployees
+);
+
+router.get(
+  "/:id",
+  authorize("HR", "ADMIN"),
+  getEmployee
+);
 
 router.post(
   "/",
+  authorize("HR", "ADMIN"),
   validate(createEmployeeSchema),
   createEmployee
 );
 
 router.patch(
   "/:id",
+  authorize("HR", "ADMIN"),
   validate(updateEmployeeSchema),
   updateEmployee
 );

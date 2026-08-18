@@ -1,24 +1,36 @@
-import { Employee, IEmployee } from "../models/employee.model";
-import { Types } from "mongoose";
+import {
+  Employee,
+  IEmployee,
+} from "../models/employee.model";
 
 export const findEmployeeById = async (
   id: string
 ): Promise<IEmployee | null> => {
   return Employee.findById(id)
-    .populate("managerId", "name employeeCode email")
-    .populate("departmentId", "name");
+    .populate(
+      "managerId",
+      "name employeeCode email"
+    )
+    .populate(
+      "departmentId",
+      "name"
+    );
 };
 
 export const findEmployeeByEmail = async (
   email: string
 ): Promise<IEmployee | null> => {
-  return Employee.findOne({ email }).select("+passwordHash");
+  return Employee.findOne({
+    email,
+  }).select("+passwordHash");
 };
 
 export const findEmployeeByCode = async (
   employeeCode: string
 ): Promise<IEmployee | null> => {
-  return Employee.findOne({ employeeCode });
+  return Employee.findOne({
+    employeeCode,
+  });
 };
 
 export const findEmployees = async (
@@ -26,16 +38,29 @@ export const findEmployees = async (
   skip: number,
   limit: number
 ) => {
-  const [employees, total] = await Promise.all([
+  const [
+    employees,
+    total,
+  ] = await Promise.all([
     Employee.find(filter)
       .select("-passwordHash")
-      .populate("managerId", "name employeeCode")
-      .populate("departmentId", "name")
+      .populate(
+        "managerId",
+        "name employeeCode"
+      )
+      .populate(
+        "departmentId",
+        "name"
+      )
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }),
+      .sort({
+        createdAt: -1,
+      }),
 
-    Employee.countDocuments(filter),
+    Employee.countDocuments(
+      filter
+    ),
   ]);
 
   return {
@@ -61,7 +86,16 @@ export const updateEmployee = async (
       new: true,
       runValidators: true,
     }
-  ).select("-passwordHash");
+  )
+    .select("-passwordHash")
+    .populate(
+      "managerId",
+      "name employeeCode"
+    )
+    .populate(
+      "departmentId",
+      "name"
+    );
 };
 
 export const countActiveEmployeesInDepartment = async (

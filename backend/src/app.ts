@@ -3,17 +3,17 @@ import cors from "cors";
 import helmet from "helmet";
 import attendanceRoutes from "./routes/attendance.route";
 
+import authRoutes from "./routes/auth.routes";
+import employeeRoutes from "./routes/employee.routes";
+import departmentRoutes from "./routes/department.routes";
+import leaveTypeRoutes from "./routes/leave-type.routes";
+import { errorHandler } from "./middlewares/error.middleware";
+
 const app = express();
 
-// Security middleware
-app.use(helmet());
-app.use(cors());
-
-// Body parser
 app.use(express.json());
 
-// Health check
-app.get("/api/v1/health", (_req, res) => {
+app.get("/health", (_req, res) => {
   res.status(200).json({
     success: true,
     message: "Employee Leave Management API is running",
@@ -32,5 +32,26 @@ app.use((_req, res) => {
     },
   });
 });
+app.use(
+  "/api/v1/leave-types",
+  leaveTypeRoutes
+);
+
+app.use(
+  "/api/v1/auth",
+  authRoutes
+);
+
+app.use(
+  "/api/v1/employees",
+  employeeRoutes
+);
+
+app.use(
+  "/api/v1/departments",
+  departmentRoutes
+);
+
+app.use(errorHandler);
 
 export default app;
