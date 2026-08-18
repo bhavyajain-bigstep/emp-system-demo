@@ -63,3 +63,12 @@ export const updateEmployee = async (
     }
   ).select("-passwordHash");
 };
+
+export const countActiveEmployeesInDepartment = async (
+  departmentId: string
+): Promise<number> => {
+  return Employee.countDocuments({
+    departmentId,
+    status: "ACTIVE",
+  });
+};
