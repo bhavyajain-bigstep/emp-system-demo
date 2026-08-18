@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt-ts';
+import bcrypt, { compare } from 'bcrypt-ts';
 
 import { findEmployeeByEmail } from "../repositories/employee.repository";
 import { AppError } from "../errors/app-error";
@@ -26,7 +26,7 @@ export const loginService = async (
     );
   }
 
-  const passwordMatches = await bcrypt.compare(
+  const passwordMatches = await compare(
     password,
     employee.passwordHash
   );

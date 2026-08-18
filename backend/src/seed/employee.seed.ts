@@ -1,5 +1,4 @@
-import bcrypt from "bcrypt-ts";
-
+import { hash } from "bcrypt-ts";
 import { Employee } from "../models/employee.model";
 import { Department } from "../models/department.model";
 
@@ -31,11 +30,10 @@ export const seedEmployees = async () => {
     );
   }
 
-  const passwordHash =
-    await bcrypt.hash(
-      "Password@123",
-      12
-    );
+  const passwordHash = await hash(
+  "Password@123",
+  12
+);
 
   const managerId = undefined;
 
