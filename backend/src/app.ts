@@ -1,4 +1,7 @@
 import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import attendanceRoutes from "./routes/attendance.route";
 
 import authRoutes from "./routes/auth.routes";
 import employeeRoutes from "./routes/employee.routes";
@@ -17,6 +20,18 @@ app.get("/health", (_req, res) => {
   });
 });
 
+app.use(attendanceRoutes);
+
+// 404 handler
+app.use((_req, res) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: "ROUTE_NOT_FOUND",
+      message: "Route not found",
+    },
+  });
+});
 app.use(
   "/api/v1/leave-types",
   leaveTypeRoutes
