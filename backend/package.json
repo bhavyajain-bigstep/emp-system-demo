@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "seed": "tsx src/seed/seed.ts"
   },
+  "type": "module",
   "keywords": [
     "nodejs",
     "express",
@@ -22,6 +23,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "bcrypt-ts": "^9.0.2",
     "cors": "^2.8.6",
     "dotenv": "^17.2.1",
@@ -31,9 +33,11 @@
     "mongoose": "^8.18.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
+    "tsc": "^2.0.4",
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",

@@ -1,7 +1,7 @@
 import {
   ILeaveBalance,
   LeaveBalance,
-} from "../models/leave-balance.model";
+} from "../models/leave-balance.model.js";
 
 import { Types } from "mongoose";
 

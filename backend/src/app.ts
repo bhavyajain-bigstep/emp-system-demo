@@ -10,6 +10,9 @@ import employeeRoutes from "./routes/employee.routes";
 import departmentRoutes from "./routes/department.routes";
 import leaveTypeRoutes from "./routes/leave-type.routes";
 import { errorHandler } from "./middlewares/error.middleware";
+import leaveRequestRoutes from "./routes/leave-request.routes";
+import holidayRoutes from "./routes/holiday.routes";
+
 
 const app = express();
 
@@ -23,6 +26,16 @@ app.get("/health", (_req, res) => {
     message: "Employee Leave Management API is running",
   });
 });
+
+app.use(
+  "/api/v1/leaves",
+  leaveRequestRoutes
+);
+
+app.use(
+  "/api/v1/holidays",
+  holidayRoutes
+);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(

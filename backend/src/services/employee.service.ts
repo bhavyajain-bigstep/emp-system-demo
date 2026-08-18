@@ -1,5 +1,5 @@
 import {
-  compare,hash
+  hash
 } from "bcrypt-ts";
 import { Types } from "mongoose";
 
@@ -10,9 +10,9 @@ import {
   findEmployeeById,
   findEmployees,
   updateEmployee,
-} from "../repositories/employee.repository";
+} from "../repositories/employee.repository.js";
 
-import { AppError } from "../errors/app-error";
+import { AppError } from "../errors/app-error.js";
 
 interface CreateEmployeeInput {
   employeeCode: string;

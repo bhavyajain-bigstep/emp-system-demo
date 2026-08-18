@@ -1,7 +1,7 @@
 import {
   Employee,
   IEmployee,
-} from "../models/employee.model";
+} from "../models/employee.model.js";
 
 export const findEmployeeById = async (
   id: string
