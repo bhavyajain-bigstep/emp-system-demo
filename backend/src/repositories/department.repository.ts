@@ -1,40 +1,35 @@
-import { Department, IDepartment } from "../models/department.model";
+import {
+  Department,
+  IDepartment,
+} from "../models/department.model";
 
 export const findDepartmentById = async (
   id: string
 ): Promise<IDepartment | null> => {
-  return Department.findById(id).populate(
-    "managerId",
-    "name employeeCode email"
-  );
+  return Department.findById(id)
+    .populate(
+      "managerId",
+      "name employeeCode email role"
+    );
 };
 
 export const findDepartmentByName = async (
   name: string
 ): Promise<IDepartment | null> => {
-  return Department.findOne({ name });
+  return Department.findOne({
+    name: name.trim(),
+  });
 };
 
-export const findDepartments = async (
-  filter: Record<string, unknown>,
-  skip: number,
-  limit: number
-) => {
-  const [departments, total] = await Promise.all([
-    Department.find(filter)
-      .populate("managerId", "name employeeCode")
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 }),
-
-    Department.countDocuments(filter),
-  ]);
-
-  return {
-    departments,
-    total,
+export const findDepartments =
+  async (): Promise<IDepartment[]> => {
+    return Department.find()
+      .populate(
+        "managerId",
+        "name employeeCode email role"
+      )
+      .sort({ name: 1 });
   };
-};
 
 export const createDepartment = async (
   data: Partial<IDepartment>
@@ -46,8 +41,21 @@ export const updateDepartment = async (
   id: string,
   data: Partial<IDepartment>
 ): Promise<IDepartment | null> => {
-  return Department.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  }).populate("managerId", "name employeeCode");
+  return Department.findByIdAndUpdate(
+    id,
+    data,
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).populate(
+    "managerId",
+    "name employeeCode email role"
+  );
+};
+
+export const deleteDepartment = async (
+  id: string
+): Promise<IDepartment | null> => {
+  return Department.findByIdAndDelete(id);
 };

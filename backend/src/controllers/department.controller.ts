@@ -1,8 +1,12 @@
-import { Request, Response, NextFunction } from "express";
+import {
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 
 import {
-  archiveDepartmentService,
   createDepartmentService,
+  deleteDepartmentService,
   getDepartmentService,
   getDepartmentsService,
   updateDepartmentService,
@@ -14,7 +18,11 @@ export const createDepartment = async (
   next: NextFunction
 ) => {
   try {
-    const department = await createDepartmentService(req.body);
+    const department =
+      await createDepartmentService(
+        req.body.name,
+        req.body.managerId
+      );
 
     return res.status(201).json({
       success: true,
@@ -27,28 +35,18 @@ export const createDepartment = async (
 };
 
 export const getDepartments = async (
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-
-    const status = req.query.status as string | undefined;
-
-    const result = await getDepartmentsService(page, limit, status);
+    const departments =
+      await getDepartmentsService();
 
     return res.status(200).json({
       success: true,
       message: "Departments fetched successfully",
-      data: result.departments,
-      pagination: {
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        totalPages: result.totalPages,
-      },
+      data: departments,
     });
   } catch (error) {
     next(error);
@@ -56,14 +54,15 @@ export const getDepartments = async (
 };
 
 export const getDepartment = async (
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const department = await getDepartmentService(
-      req.params.id as string
-    );
+    const department =
+      await getDepartmentService(
+        req.params.id
+      );
 
     return res.status(200).json({
       success: true,
@@ -76,15 +75,16 @@ export const getDepartment = async (
 };
 
 export const updateDepartment = async (
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const department = await updateDepartmentService(
-      req.params.id as string,
-      req.body
-    );
+    const department =
+      await updateDepartmentService(
+        req.params.id,
+        req.body
+      );
 
     return res.status(200).json({
       success: true,
@@ -96,21 +96,17 @@ export const updateDepartment = async (
   }
 };
 
-export const archiveDepartment = async (
-  req: Request,
+export const deleteDepartment = async (
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const department = await archiveDepartmentService(
-      req.params.id as string
+    await deleteDepartmentService(
+      req.params.id
     );
 
-    return res.status(200).json({
-      success: true,
-      message: "Department archived successfully",
-      data: department,
-    });
+    return res.status(204).send();
   } catch (error) {
     next(error);
   }
