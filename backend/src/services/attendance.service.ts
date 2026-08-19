@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { AppError } from "../errors/app-error";
 import { env } from "../config/env";
 import { findEmployeeById } from "../repositories/employee.repository";
+import { Holiday } from "../models/holiday.model";
 import {
   createAttendance,
   findAttendanceByEmployeeAndDate,
@@ -13,10 +14,12 @@ import {
 import {
   getLocalDateString,
   getLocalMinutesSinceMidnight,
-  getWorkingDaysInMonth,
+  isWeekendDay,
 } from "../utils/timezone.util";
 
-const WEEKEND_DAYS = env.ATTENDANCE_WEEKEND_DAYS.split(",").map(Number);
+const WEEKEND_DAYS = env.ATTENDANCE_WEEKEND_DAYS
+  ? env.ATTENDANCE_WEEKEND_DAYS.split(",").map(Number)
+  : [0, 6];
 
 const assertValidEmployee = async (employeeId: string) => {
   if (!Types.ObjectId.isValid(employeeId)) {
@@ -100,7 +103,6 @@ export const checkOutService = async (employeeId: string) => {
   }
 
   if (now < record.checkInAt) {
-    // Defensive only — shouldn't be reachable through this flow.
     throw new AppError(
       "Check-out time cannot be before check-in time",
       400,
@@ -111,9 +113,6 @@ export const checkOutService = async (employeeId: string) => {
   const workedMinutes =
     (now.getTime() - record.checkInAt.getTime()) / 60000;
 
-  // Placeholder policy: short days get downgraded to HALF_DAY regardless
-  // of whether check-in was PRESENT or LATE. Revisit once HR confirms
-  // the actual half-day rule.
   const status =
     workedMinutes < env.ATTENDANCE_MIN_MINUTES_FULL_DAY
       ? "HALF_DAY"
@@ -163,7 +162,7 @@ export const getMonthlyAttendanceSummaryService = async (
   year: number,
   month: number // 1-12
 ) => {
-  await assertValidEmployee(employeeId);
+  const employee = await assertValidEmployee(employeeId);
 
   const fromDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -173,8 +172,39 @@ export const getMonthlyAttendanceSummaryService = async (
 
   const records = await findAttendanceInRange(employeeId, fromDate, toDate);
 
-  // Holiday exclusion intentionally not applied yet — see module notes.
-  const workingDays = getWorkingDaysInMonth(year, month, WEEKEND_DAYS);
+  // Fetch mandatory holidays in this month
+  const startQueryDate = new Date(Date.UTC(year, month - 1, 1));
+  const endQueryDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+  const holidays = await Holiday.find({
+    date: { $gte: startQueryDate, $lte: endQueryDate },
+    optional: false,
+  });
+
+  const holidayDateStrings = holidays.map((h) =>
+    getLocalDateString(h.date, employee.timezone)
+  );
+
+  let weekends = 0;
+  let holidayCount = 0;
+  let totalWorkingDays = 0;
+
+  for (let day = 1; day <= lastDay; day++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
+      day
+    ).padStart(2, "0")}`;
+
+    const isWeekend = isWeekendDay(dateStr, WEEKEND_DAYS);
+    const isHoliday = holidayDateStrings.includes(dateStr);
+
+    if (isWeekend) {
+      weekends++;
+    } else if (isHoliday) {
+      holidayCount++;
+    } else {
+      totalWorkingDays++;
+    }
+  }
 
   const counts = {
     presentDays: 0,
@@ -194,14 +224,30 @@ export const getMonthlyAttendanceSummaryService = async (
   const accountedDays =
     counts.presentDays + counts.lateDays + counts.halfDays + counts.leaveDays;
 
-  counts.absentDays = Math.max(workingDays - accountedDays, 0);
+  counts.absentDays = Math.max(totalWorkingDays - accountedDays, 0);
+
+  const effectivePresentDays =
+    counts.presentDays + counts.lateDays + counts.halfDays * 0.5;
+
+  const attendancePercentage =
+    totalWorkingDays > 0
+      ? Number(((effectivePresentDays / totalWorkingDays) * 100).toFixed(2))
+      : 0;
 
   return {
     employeeId,
     year,
     month,
-    workingDays,
-    ...counts,
-    holidaysExcluded: false, // flips to true once Holiday module is wired in
+    totalWorkingDays,
+    workingDays: totalWorkingDays,
+    presentDays: counts.presentDays,
+    lateDays: counts.lateDays,
+    halfDays: counts.halfDays,
+    leaveDays: counts.leaveDays,
+    absentDays: counts.absentDays,
+    holidays: holidayCount,
+    weekends,
+    attendancePercentage,
+    holidaysExcluded: true,
   };
 };

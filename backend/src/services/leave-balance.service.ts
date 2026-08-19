@@ -13,12 +13,14 @@ import {
 
 import { Employee } from "../models/employee.model";
 import { LeaveType } from "../models/leave-type.model";
+import { logAuditEvent } from "./audit-log.service";
 
 interface CreateBalanceInput {
   employeeId: string;
   leaveTypeId: string;
   year: number;
   allocated: number;
+  actorId?: string;
 }
 
 export const createLeaveBalanceService =
@@ -100,7 +102,7 @@ export const createLeaveBalanceService =
       );
     }
 
-    return createBalance({
+    const newBalance = await createBalance({
       employeeId:
         new Types.ObjectId(
           data.employeeId
@@ -119,6 +121,22 @@ export const createLeaveBalanceService =
 
       available: data.allocated,
     });
+
+    await logAuditEvent({
+      actorId: data.actorId,
+      action: "LEAVE_BALANCE_CREATED",
+      entityType: "LEAVE_BALANCE",
+      entityId: newBalance._id.toString(),
+      newValue: newBalance,
+      metadata: {
+        employeeId: data.employeeId,
+        leaveTypeId: data.leaveTypeId,
+        year: data.year,
+        allocated: data.allocated,
+      },
+    });
+
+    return newBalance;
   };
 
 export const getAllLeaveBalancesService =
@@ -193,7 +211,8 @@ export const getLeaveBalanceService =
 export const updateLeaveBalanceService =
   async (
     id: string,
-    allocated: number
+    allocated: number,
+    actorId?: string
   ) => {
     if (
       !Types.ObjectId.isValid(id)
@@ -229,11 +248,22 @@ export const updateLeaveBalanceService =
     const available =
       allocated - balance.used;
 
-    return updateBalance(
+    const updated = await updateBalance(
       id,
       {
         allocated,
         available,
       }
     );
+
+    await logAuditEvent({
+      actorId,
+      action: "LEAVE_BALANCE_UPDATED",
+      entityType: "LEAVE_BALANCE",
+      entityId: id,
+      oldValue: { allocated: balance.allocated, available: balance.available },
+      newValue: { allocated, available },
+    });
+
+    return updated;
   };

@@ -8,6 +8,8 @@ import {
 } from "../controllers/department.controller";
 
 import { validate } from "../middlewares/validate.middleware";
+import { authenticate } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/role.middleware";
 
 import {
   createDepartmentSchema,
@@ -16,9 +18,8 @@ import {
 
 const router = Router();
 
-// NOTE: no authenticate/authorize middleware yet — matches the current
-// (unauthenticated) state of employee.routes.ts. Tighten both together
-// once auth.middleware.ts / role.middleware.ts actually exist.
+router.use(authenticate);
+
 
 /**
  * @swagger
@@ -143,7 +144,12 @@ router.get("/:id", getDepartment);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", validate(createDepartmentSchema), createDepartment);
+router.post(
+  "/",
+  authorize("HR", "ADMIN"),
+  validate(createDepartmentSchema),
+  createDepartment
+);
 
 /**
  * @swagger
@@ -201,6 +207,11 @@ router.post("/", validate(createDepartmentSchema), createDepartment);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.patch("/:id", validate(updateDepartmentSchema), updateDepartment);
+router.patch(
+  "/:id",
+  authorize("HR", "ADMIN"),
+  validate(updateDepartmentSchema),
+  updateDepartment
+);
 
 export default router;

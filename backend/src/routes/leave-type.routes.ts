@@ -7,8 +7,18 @@ import {
   getLeaveTypes,
   updateLeaveType,
 } from "../controllers/leave-type.controller";
+import { authenticate } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/role.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import {
+  createLeaveTypeSchema,
+  updateLeaveTypeSchema,
+} from "../validators/leave-type.validator";
 
 const router = Router();
+
+router.use(authenticate);
+
 
 /**
  * @swagger
@@ -193,7 +203,12 @@ router.get("/:id", getLeaveType);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", createLeaveType);
+router.post(
+  "/",
+  authorize("HR", "ADMIN"),
+  validate(createLeaveTypeSchema),
+  createLeaveType
+);
 
 /**
  * @swagger
@@ -277,7 +292,12 @@ router.post("/", createLeaveType);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.patch("/:id", updateLeaveType);
+router.patch(
+  "/:id",
+  authorize("HR", "ADMIN"),
+  validate(updateLeaveTypeSchema),
+  updateLeaveType
+);
 
 /**
  * @swagger
@@ -333,6 +353,10 @@ router.patch("/:id", updateLeaveType);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete("/:id", deleteLeaveType);
+router.delete(
+  "/:id",
+  authorize("HR", "ADMIN"),
+  deleteLeaveType
+);
 
 export default router;

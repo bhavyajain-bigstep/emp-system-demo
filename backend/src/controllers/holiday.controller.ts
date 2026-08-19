@@ -143,7 +143,8 @@ export const updateHoliday =
 
             description:
               req.body.description,
-          }
+          },
+          req.user?.userId
         );
 
       res.status(200).json({
@@ -165,7 +166,8 @@ export const deleteHoliday =
   ) => {
     try {
       await deleteHolidayService(
-        req.params.id
+        req.params.id,
+        req.user?.userId
       );
 
       res.status(200).json({

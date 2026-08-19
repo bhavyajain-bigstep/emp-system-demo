@@ -126,7 +126,7 @@ router.get("/", authorize("HR", "ADMIN"), getEmployees);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/:id", authorize("HR", "ADMIN"), getEmployee);
+router.get("/:id", getEmployee);
 
 /**
  * @swagger

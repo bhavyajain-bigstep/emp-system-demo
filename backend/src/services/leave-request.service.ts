@@ -15,11 +15,15 @@ import {
 } from "../repositories/leave-request.repository";
 
 import {
+  deductBalance,
   findBalance,
+  restoreBalance,
   updateBalance,
 } from "../repositories/leave-balance.repository";
 
 import { calculateLeaveDays } from "./leave-day.service";
+import { logAuditEvent } from "./audit-log.service";
+import { notificationService } from "./notification.service";
 
 interface CreateLeaveRequestInput {
   employeeId: string;
@@ -130,16 +134,15 @@ export const createLeaveRequestService =
     }
 
     /*
-     * Calculate working leave days.
+     * Calculate working leave days considering timezone, weekends, and holidays.
      */
     const days =
       await calculateLeaveDays(
         data.fromDate,
         data.toDate,
-        leaveType.rules
-          .excludeWeekends,
-        leaveType.rules
-          .excludeMandatoryHolidays
+        leaveType.rules.excludeWeekends,
+        leaveType.rules.excludeMandatoryHolidays,
+        employee.timezone || "Asia/Kolkata"
       );
 
     if (days <= 0) {
@@ -217,13 +220,9 @@ export const createLeaveRequestService =
 
     /*
      * Create request.
-     *
-     * IMPORTANT:
-     * Balance is NOT reduced here.
-     *
-     * Balance changes only after approval.
+     * Balance is NOT reduced here; it changes only after approval.
      */
-    return createLeaveRequest({
+    const createdRequest = await createLeaveRequest({
       employeeId:
         new Types.ObjectId(
           data.employeeId
@@ -244,6 +243,24 @@ export const createLeaveRequestService =
 
       status: "PENDING",
     });
+
+    await logAuditEvent({
+      actorId: data.employeeId,
+      action: "LEAVE_CREATED",
+      entityType: "LEAVE_REQUEST",
+      entityId: createdRequest._id.toString(),
+      newValue: createdRequest,
+      metadata: {
+        days,
+        fromDate: data.fromDate,
+        toDate: data.toDate,
+        leaveTypeId: data.leaveTypeId,
+      },
+    });
+
+    await notificationService.notifyLeaveCreated(createdRequest, employee);
+
+    return createdRequest;
   };
 
 export const getEmployeeLeaveRequestsService =
@@ -324,9 +341,23 @@ export const approveLeaveRequestService =
       );
     }
 
+    const employeeIdStr =
+      (request.employeeId as any)?._id
+        ? (request.employeeId as any)._id.toString()
+        : request.employeeId.toString();
+
+    // Prevent self-approval
+    if (employeeIdStr === approverId) {
+      throw new AppError(
+        "You cannot approve your own leave request",
+        403,
+        "CANNOT_APPROVE_OWN_LEAVE"
+      );
+    }
+
     const employee =
       await Employee.findById(
-        request.employeeId
+        employeeIdStr
       );
 
     if (!employee) {
@@ -337,13 +368,6 @@ export const approveLeaveRequestService =
       );
     }
 
-    /*
-     * Only the employee's manager or HR/Admin
-     * should approve.
-     *
-     * Your Employee role definitions may differ.
-     * Adjust ADMIN/HR values if necessary.
-     */
     const approver =
       await Employee.findById(
         approverId
@@ -377,16 +401,27 @@ export const approveLeaveRequestService =
       );
     }
 
+    const leaveTypeIdStr =
+      (request.leaveTypeId as any)?._id
+        ? (request.leaveTypeId as any)._id.toString()
+        : request.leaveTypeId.toString();
+
+    const leaveType = await LeaveType.findById(leaveTypeIdStr);
+    if (!leaveType) {
+      throw new AppError(
+        "Leave type not found",
+        404,
+        "LEAVE_TYPE_NOT_FOUND"
+      );
+    }
+
     /*
-     * Find balance again immediately before approval.
-     *
-     * We do this because the balance could have
-     * changed after the employee submitted the request.
+     * Re-verify balance immediately before approval.
      */
     const balance =
       await findBalance(
-        request.employeeId.toString(),
-        request.leaveTypeId.toString(),
+        employeeIdStr,
+        leaveTypeIdStr,
         request.fromDate.getFullYear()
       );
 
@@ -399,8 +434,8 @@ export const approveLeaveRequestService =
     }
 
     if (
-      balance.available <
-      request.days
+      !leaveType.rules.allowNegativeBalance &&
+      balance.available < request.days
     ) {
       throw new AppError(
         "Insufficient leave balance at approval time",
@@ -410,20 +445,12 @@ export const approveLeaveRequestService =
     }
 
     /*
-     * Update balance.
+     * Deduct balance atomically.
      */
     const updatedBalance =
-      await updateBalance(
+      await deductBalance(
         balance._id.toString(),
-        {
-          used:
-            balance.used +
-            request.days,
-
-          available:
-            balance.available -
-            request.days,
-        }
+        request.days
       );
 
     if (!updatedBalance) {
@@ -437,19 +464,31 @@ export const approveLeaveRequestService =
     /*
      * Approve request.
      */
-    return updateLeaveRequest(
+    const approved = await updateLeaveRequest(
       requestId,
       {
         status: "APPROVED",
-
         approvedBy:
           new Types.ObjectId(
             approverId
           ),
-
         approvedAt: new Date(),
       }
     );
+
+    await logAuditEvent({
+      actorId: approverId,
+      action: "LEAVE_APPROVED",
+      entityType: "LEAVE_REQUEST",
+      entityId: requestId,
+      oldValue: { status: "PENDING" },
+      newValue: { status: "APPROVED", approvedBy: approverId, approvedAt: new Date() },
+      metadata: { days: request.days, employeeId: employeeIdStr },
+    });
+
+    await notificationService.notifyLeaveApproved(approved, employee, approver);
+
+    return approved;
   };
 
 export const rejectLeaveRequestService =
@@ -458,6 +497,30 @@ export const rejectLeaveRequestService =
     approverId: string,
     rejectionReason: string
   ) => {
+    if (
+      !Types.ObjectId.isValid(
+        requestId
+      )
+    ) {
+      throw new AppError(
+        "Invalid leave request ID",
+        400,
+        "INVALID_LEAVE_REQUEST_ID"
+      );
+    }
+
+    if (
+      !Types.ObjectId.isValid(
+        approverId
+      )
+    ) {
+      throw new AppError(
+        "Invalid approver ID",
+        400,
+        "INVALID_APPROVER_ID"
+      );
+    }
+
     const request =
       await findLeaveRequestById(
         requestId
@@ -481,9 +544,23 @@ export const rejectLeaveRequestService =
       );
     }
 
+    const employeeIdStr =
+      (request.employeeId as any)?._id
+        ? (request.employeeId as any)._id.toString()
+        : request.employeeId.toString();
+
+    // Prevent self-rejection
+    if (employeeIdStr === approverId) {
+      throw new AppError(
+        "You cannot reject your own leave request",
+        403,
+        "CANNOT_REJECT_OWN_LEAVE"
+      );
+    }
+
     const employee =
       await Employee.findById(
-        request.employeeId
+        employeeIdStr
       );
 
     const approver =
@@ -522,7 +599,7 @@ export const rejectLeaveRequestService =
       );
     }
 
-    return updateLeaveRequest(
+    const rejected = await updateLeaveRequest(
       requestId,
       {
         status: "REJECTED",
@@ -533,4 +610,156 @@ export const rejectLeaveRequestService =
         rejectionReason,
       }
     );
+
+    await logAuditEvent({
+      actorId: approverId,
+      action: "LEAVE_REJECTED",
+      entityType: "LEAVE_REQUEST",
+      entityId: requestId,
+      oldValue: { status: "PENDING" },
+      newValue: { status: "REJECTED", approvedBy: approverId, rejectionReason },
+      metadata: { employeeId: employeeIdStr, rejectionReason },
+    });
+
+    await notificationService.notifyLeaveRejected(rejected, employee, approver, rejectionReason);
+
+    return rejected;
+  };
+
+export const cancelLeaveRequestService =
+  async (
+    requestId: string,
+    userId: string,
+    userRole: string
+  ) => {
+    if (
+      !Types.ObjectId.isValid(
+        requestId
+      )
+    ) {
+      throw new AppError(
+        "Invalid leave request ID",
+        400,
+        "INVALID_LEAVE_REQUEST_ID"
+      );
+    }
+
+    if (
+      !Types.ObjectId.isValid(
+        userId
+      )
+    ) {
+      throw new AppError(
+        "Invalid user ID",
+        400,
+        "INVALID_USER_ID"
+      );
+    }
+
+    const request =
+      await findLeaveRequestById(
+        requestId
+      );
+
+    if (!request) {
+      throw new AppError(
+        "Leave request not found",
+        404,
+        "LEAVE_REQUEST_NOT_FOUND"
+      );
+    }
+
+    const employeeIdStr =
+      (request.employeeId as any)?._id
+        ? (request.employeeId as any)._id.toString()
+        : request.employeeId.toString();
+
+    const isOwner = employeeIdStr === userId;
+    const isPrivileged = userRole === "HR" || userRole === "ADMIN";
+
+    if (!isOwner && !isPrivileged) {
+      throw new AppError(
+        "You are not authorized to cancel this leave request",
+        403,
+        "NOT_AUTHORIZED_TO_CANCEL"
+      );
+    }
+
+    if (
+      request.status !== "PENDING" &&
+      request.status !== "APPROVED"
+    ) {
+      throw new AppError(
+        `Cannot cancel a leave request with status ${request.status}`,
+        400,
+        "INVALID_LEAVE_REQUEST_STATUS"
+      );
+    }
+
+    const leaveTypeIdStr =
+      (request.leaveTypeId as any)?._id
+        ? (request.leaveTypeId as any)._id.toString()
+        : request.leaveTypeId.toString();
+
+    const leaveType = await LeaveType.findById(leaveTypeIdStr);
+    if (!leaveType) {
+      throw new AppError(
+        "Leave type not found",
+        404,
+        "LEAVE_TYPE_NOT_FOUND"
+      );
+    }
+
+    if (!leaveType.rules.allowCancellation) {
+      throw new AppError(
+        "Cancellation is not permitted for this leave type policy",
+        400,
+        "CANCELLATION_NOT_ALLOWED"
+      );
+    }
+
+    const employee = await Employee.findById(employeeIdStr);
+
+    // If request was approved, restore the consumed balance
+    if (request.status === "APPROVED") {
+      const balance = await findBalance(
+        employeeIdStr,
+        leaveTypeIdStr,
+        request.fromDate.getFullYear()
+      );
+
+      if (balance) {
+        await restoreBalance(
+          balance._id.toString(),
+          request.days
+        );
+      }
+    }
+
+    const cancelled = await updateLeaveRequest(
+      requestId,
+      {
+        status: "CANCELLED",
+        cancelledAt: new Date(),
+      }
+    );
+
+    await logAuditEvent({
+      actorId: userId,
+      action: "LEAVE_CANCELLED",
+      entityType: "LEAVE_REQUEST",
+      entityId: requestId,
+      oldValue: { status: request.status },
+      newValue: { status: "CANCELLED", cancelledAt: new Date() },
+      metadata: {
+        employeeId: employeeIdStr,
+        restoredDays: request.status === "APPROVED" ? request.days : 0,
+      },
+    });
+
+    if (employee) {
+      await notificationService.notifyLeaveCancelled(cancelled, employee, { _id: userId });
+    }
+
+    return cancelled;
   };

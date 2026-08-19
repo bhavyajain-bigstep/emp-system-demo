@@ -6,11 +6,14 @@ import {
 
 import {
   approveLeaveRequestService,
+  cancelLeaveRequestService,
   createLeaveRequestService,
   getEmployeeLeaveRequestsService,
   getPendingLeaveRequestsService,
   rejectLeaveRequestService,
 } from "../services/leave-request.service";
+import { findLeaveRequestById } from "../repositories/leave-request.repository";
+import { AppError } from "../errors/app-error";
 
 export const createLeaveRequest =
   async (
@@ -19,22 +22,17 @@ export const createLeaveRequest =
     next: NextFunction
   ) => {
     try {
-      /*
-       * IMPORTANT:
-       *
-       * employeeId should eventually come
-       * from req.user.id after authentication.
-       *
-       * For now we expect req.user to exist.
-       */
       const employeeId =
-        req.user?.id;
+        req.user?.userId;
 
       if (!employeeId) {
         return res.status(401).json({
           success: false,
           message:
             "Authentication required",
+          error: {
+            code: "AUTHENTICATION_REQUIRED",
+          },
         });
       }
 
@@ -78,13 +76,16 @@ export const getMyLeaveRequests =
   ) => {
     try {
       const employeeId =
-        req.user?.id;
+        req.user?.userId;
 
       if (!employeeId) {
         return res.status(401).json({
           success: false,
           message:
             "Authentication required",
+          error: {
+            code: "AUTHENTICATION_REQUIRED",
+          },
         });
       }
 
@@ -104,6 +105,43 @@ export const getMyLeaveRequests =
     }
   };
 
+export const getLeaveRequest =
+  async (
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const request = await findLeaveRequestById(req.params.id);
+      if (!request) {
+        throw new AppError("Leave request not found", 404, "LEAVE_REQUEST_NOT_FOUND");
+      }
+
+      const employeeIdStr = (request.employeeId as any)?._id
+        ? (request.employeeId as any)._id.toString()
+        : request.employeeId.toString();
+
+      if (
+        req.user?.role === "EMPLOYEE" &&
+        req.user?.userId !== employeeIdStr
+      ) {
+        throw new AppError(
+          "You do not have permission to view this leave request",
+          403,
+          "FORBIDDEN"
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Leave request fetched successfully",
+        data: request,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
 export const getPendingLeaveRequests =
   async (
     req: Request,
@@ -114,11 +152,21 @@ export const getPendingLeaveRequests =
       const requests =
         await getPendingLeaveRequestsService();
 
+      // If manager, filter to only their team members
+      let filteredRequests = requests;
+      if (req.user?.role === "MANAGER") {
+        const managerId = req.user.userId;
+        filteredRequests = requests.filter((r) => {
+          const emp = r.employeeId as any;
+          return emp?.managerId?.toString() === managerId;
+        });
+      }
+
       return res.status(200).json({
         success: true,
         message:
           "Pending leave requests fetched successfully",
-        data: requests,
+        data: filteredRequests,
       });
     } catch (error) {
       next(error);
@@ -133,13 +181,16 @@ export const approveLeaveRequest =
   ) => {
     try {
       const approverId =
-        req.user?.id;
+        req.user?.userId;
 
       if (!approverId) {
         return res.status(401).json({
           success: false,
           message:
             "Authentication required",
+          error: {
+            code: "AUTHENTICATION_REQUIRED",
+          },
         });
       }
 
@@ -168,13 +219,16 @@ export const rejectLeaveRequest =
   ) => {
     try {
       const approverId =
-        req.user?.id;
+        req.user?.userId;
 
       if (!approverId) {
         return res.status(401).json({
           success: false,
           message:
             "Authentication required",
+          error: {
+            code: "AUTHENTICATION_REQUIRED",
+          },
         });
       }
 
@@ -189,6 +243,45 @@ export const rejectLeaveRequest =
         success: true,
         message:
           "Leave request rejected successfully",
+        data: request,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+export const cancelLeaveRequest =
+  async (
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const userId = req.user?.userId;
+      const userRole = req.user?.role || "EMPLOYEE";
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Authentication required",
+          error: {
+            code: "AUTHENTICATION_REQUIRED",
+          },
+        });
+      }
+
+      const request =
+        await cancelLeaveRequestService(
+          req.params.id,
+          userId,
+          userRole
+        );
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Leave request cancelled successfully",
         data: request,
       });
     } catch (error) {

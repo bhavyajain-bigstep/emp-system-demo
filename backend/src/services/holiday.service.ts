@@ -10,6 +10,7 @@ import {
   findHolidayById,
   updateHoliday,
 } from "../repositories/holiday.repository";
+import { logAuditEvent } from "./audit-log.service";
 
 interface CreateHolidayInput {
   date: Date;
@@ -35,18 +36,6 @@ export const createHolidayService =
       );
     }
 
-    /*
-     * Normalize date to the beginning
-     * of the day.
-     *
-     * This prevents:
-     *
-     * 2026-08-15 00:00
-     * and
-     * 2026-08-15 15:30
-     *
-     * from being treated as different holidays.
-     */
     const date =
       new Date(data.date);
 
@@ -70,7 +59,7 @@ export const createHolidayService =
       );
     }
 
-    return createHoliday({
+    const newHoliday = await createHoliday({
       date,
 
       name: data.name,
@@ -86,6 +75,17 @@ export const createHolidayService =
           data.createdBy
         ),
     });
+
+    await logAuditEvent({
+      actorId: data.createdBy,
+      action: "HOLIDAY_CREATED",
+      entityType: "HOLIDAY",
+      entityId: newHoliday._id.toString(),
+      newValue: newHoliday,
+      metadata: { name: data.name, date, optional: data.optional },
+    });
+
+    return newHoliday;
   };
 
 export const getHolidaysService =
@@ -107,10 +107,6 @@ export const getHolidaysService =
         month >= 1 &&
         month <= 12
       ) {
-        /*
-         * Month is 1-based for API.
-         * JavaScript months are 0-based.
-         */
         startDate = new Date(
           year,
           month - 1,
@@ -187,7 +183,8 @@ export const updateHolidayService =
       name?: string;
       optional?: boolean;
       description?: string;
-    }
+    },
+    actorId?: string
   ) => {
     if (
       !Types.ObjectId.isValid(id)
@@ -225,10 +222,6 @@ export const updateHolidayService =
         0
       );
 
-      /*
-       * Check whether another holiday
-       * already uses the new date.
-       */
       const existing =
         await findHolidayByDate(
           date
@@ -248,15 +241,27 @@ export const updateHolidayService =
       updateData.date = date;
     }
 
-    return updateHoliday(
+    const updated = await updateHoliday(
       id,
       updateData
     );
+
+    await logAuditEvent({
+      actorId,
+      action: "HOLIDAY_UPDATED",
+      entityType: "HOLIDAY",
+      entityId: id,
+      oldValue: holiday,
+      newValue: updated,
+    });
+
+    return updated;
   };
 
 export const deleteHolidayService =
   async (
-    id: string
+    id: string,
+    actorId?: string
   ) => {
     if (
       !Types.ObjectId.isValid(id)
@@ -279,5 +284,15 @@ export const deleteHolidayService =
       );
     }
 
-    return deleteHoliday(id);
+    const deleted = await deleteHoliday(id);
+
+    await logAuditEvent({
+      actorId,
+      action: "HOLIDAY_DELETED",
+      entityType: "HOLIDAY",
+      entityId: id,
+      oldValue: holiday,
+    });
+
+    return deleted;
   };

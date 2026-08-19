@@ -10,9 +10,10 @@ import {
   findEmployeeById,
   findEmployees,
   updateEmployee,
-} from "../repositories/employee.repository.js";
+} from "../repositories/employee.repository";
 
-import { AppError } from "../errors/app-error.js";
+import { AppError } from "../errors/app-error";
+import { logAuditEvent } from "./audit-log.service";
 
 interface CreateEmployeeInput {
   employeeCode: string;
@@ -24,6 +25,7 @@ interface CreateEmployeeInput {
   departmentId?: string;
   joiningDate: string;
   timezone: string;
+  actorId?: string;
 }
 
 interface CreateEmployeeData {
@@ -134,6 +136,19 @@ export const createEmployeeService = async (
       employeeData
     );
 
+  await logAuditEvent({
+    actorId: data.actorId,
+    action: "EMPLOYEE_CREATED",
+    entityType: "EMPLOYEE",
+    entityId: employee._id.toString(),
+    newValue: employee,
+    metadata: {
+      employeeCode: employee.employeeCode,
+      email: employee.email,
+      role: employee.role,
+    },
+  });
+
   return employee;
 };
 
@@ -235,7 +250,8 @@ export const updateEmployeeService = async (
       | "ACTIVE"
       | "INACTIVE"
       | "SUSPENDED";
-  }
+  },
+  actorId?: string
 ) => {
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError(
@@ -338,8 +354,24 @@ export const updateEmployeeService = async (
       );
   }
 
-  return updateEmployee(
+  const updated = await updateEmployee(
     id,
     updateData
   );
+
+  const action =
+    data.status && data.status !== employee.status
+      ? "EMPLOYEE_STATUS_CHANGED"
+      : "EMPLOYEE_UPDATED";
+
+  await logAuditEvent({
+    actorId,
+    action,
+    entityType: "EMPLOYEE",
+    entityId: id,
+    oldValue: employee,
+    newValue: updated,
+  });
+
+  return updated;
 };

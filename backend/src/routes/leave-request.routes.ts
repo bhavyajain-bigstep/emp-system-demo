@@ -2,7 +2,9 @@ import { Router } from "express";
 
 import {
   approveLeaveRequest,
+  cancelLeaveRequest,
   createLeaveRequest,
+  getLeaveRequest,
   getMyLeaveRequests,
   getPendingLeaveRequests,
   rejectLeaveRequest,
@@ -22,11 +24,10 @@ const router = Router();
 router.use(authenticate);
 
 /*
- * Employee submits leave.
+ * Employee (or any authenticated user) submits leave.
  */
 router.post(
   "/",
-  authorize("EMPLOYEE"),
   validate(createLeaveRequestSchema),
   createLeaveRequest
 );
@@ -36,7 +37,6 @@ router.post(
  */
 router.get(
   "/my",
-  authorize("EMPLOYEE"),
   getMyLeaveRequests
 );
 
@@ -51,6 +51,14 @@ router.get(
     "ADMIN"
   ),
   getPendingLeaveRequests
+);
+
+/*
+ * View single leave request.
+ */
+router.get(
+  "/:id",
+  getLeaveRequest
 );
 
 /*
@@ -80,6 +88,14 @@ router.put(
     rejectLeaveRequestSchema
   ),
   rejectLeaveRequest
+);
+
+/*
+ * Cancel.
+ */
+router.put(
+  "/:id/cancel",
+  cancelLeaveRequest
 );
 
 export default router;

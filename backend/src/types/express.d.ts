@@ -1,11 +1,10 @@
-export {};
+import { JwtPayload } from "./auth.types";
 
 declare global {
   namespace Express {
-    interface User {
-      userId: string;
-      employeeCode: string;
-      role: string;
+    interface Request {
+      user?: JwtPayload;
     }
+    interface User extends JwtPayload {}
   }
 }

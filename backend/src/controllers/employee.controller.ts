@@ -10,6 +10,7 @@ import {
   getEmployeesService,
   updateEmployeeService,
 } from "../services/employee.service";
+import { AppError } from "../errors/app-error";
 
 export const createEmployee = async (
   req: Request,
@@ -17,9 +18,10 @@ export const createEmployee = async (
   next: NextFunction
 ) => {
   try {
-    const employee = await createEmployeeService(
-      req.body
-    );
+    const employee = await createEmployeeService({
+      ...req.body,
+      actorId: req.user?.userId,
+    });
 
     return res.status(201).json({
       success: true,
@@ -75,9 +77,20 @@ export const getEmployee = async (
   next: NextFunction
 ) => {
   try {
-    const employee = await getEmployeeService(
-      req.params.id as string
-    );
+    const targetId = req.params.id as string;
+    const employee = await getEmployeeService(targetId);
+
+    if (req.user?.role === "EMPLOYEE" && req.user.userId !== targetId) {
+      throw new AppError("You do not have permission to view this employee", 403, "FORBIDDEN");
+    }
+
+    if (
+      req.user?.role === "MANAGER" &&
+      req.user.userId !== targetId &&
+      employee.managerId?.toString() !== req.user.userId
+    ) {
+      throw new AppError("You can only view members of your team", 403, "FORBIDDEN");
+    }
 
     return res.status(200).json({
       success: true,
@@ -97,7 +110,8 @@ export const updateEmployee = async (
   try {
     const employee = await updateEmployeeService(
       req.params.id as string,
-      req.body
+      req.body,
+      req.user?.userId
     );
 
     return res.status(200).json({
