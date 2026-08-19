@@ -5,6 +5,7 @@ import {
   getAllLeaveBalances,
   getEmployeeLeaveBalances,
   getLeaveBalance,
+  getMyLeaveBalances,
   updateLeaveBalance,
 } from "../controllers/leave-balance.controller";
 
@@ -25,17 +26,20 @@ router.use(authenticate);
  * Employee:
  *
  * GET /api/v1/leave-balances
- *
- * This should eventually return the
- * logged-in employee's balances.
- *
- * For now HR/Admin can access the
- * complete list.
+ * HR/Admin can access the complete list.
  */
 router.get(
   "/",
   authorize("HR", "ADMIN"),
   getAllLeaveBalances
+);
+
+/*
+ * Logged-in employee's balances
+ */
+router.get(
+  "/my",
+  getMyLeaveBalances
 );
 
 /*

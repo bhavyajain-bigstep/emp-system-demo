@@ -1,7 +1,7 @@
 import {
   ILeaveRequest,
   LeaveRequest,
-} from "../models/leave-request.model.js";
+} from "../models/leave-request.model";
 
 import { Types } from "mongoose";
 

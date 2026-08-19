@@ -6,6 +6,8 @@ import {
   getAttendanceListService,
   getMonthlyAttendanceSummaryService,
 } from "../services/attendance.service";
+import { AppError } from "../errors/app-error";
+import { Employee } from "../models/employee.model";
 
 export const checkIn = async (
   req: Request,
@@ -13,9 +15,24 @@ export const checkIn = async (
   next: NextFunction
 ) => {
   try {
-    const attendance = await checkInService(
-      req.params.employeeId as string
-    );
+    const targetEmployeeId = (req.params.employeeId || req.user?.userId) as string;
+
+    if (!targetEmployeeId) {
+      throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
+    }
+
+    if (
+      req.user?.role === "EMPLOYEE" &&
+      req.user?.userId !== targetEmployeeId
+    ) {
+      throw new AppError(
+        "You cannot check in for another employee",
+        403,
+        "FORBIDDEN"
+      );
+    }
+
+    const attendance = await checkInService(targetEmployeeId);
 
     return res.status(201).json({
       success: true,
@@ -33,9 +50,24 @@ export const checkOut = async (
   next: NextFunction
 ) => {
   try {
-    const attendance = await checkOutService(
-      req.params.employeeId as string
-    );
+    const targetEmployeeId = (req.params.employeeId || req.user?.userId) as string;
+
+    if (!targetEmployeeId) {
+      throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
+    }
+
+    if (
+      req.user?.role === "EMPLOYEE" &&
+      req.user?.userId !== targetEmployeeId
+    ) {
+      throw new AppError(
+        "You cannot check out for another employee",
+        403,
+        "FORBIDDEN"
+      );
+    }
+
+    const attendance = await checkOutService(targetEmployeeId);
 
     return res.status(200).json({
       success: true,
@@ -56,10 +88,14 @@ export const getAttendanceList = async (
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    const employeeId = req.query.employeeId as string | undefined;
+    let employeeId = req.query.employeeId as string | undefined;
     const status = req.query.status as string | undefined;
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
+
+    if (req.user?.role === "EMPLOYEE") {
+      employeeId = req.user.userId;
+    }
 
     const result = await getAttendanceListService(
       page,
@@ -92,11 +128,43 @@ export const getMonthlySummary = async (
   next: NextFunction
 ) => {
   try {
+    const targetEmployeeId = (
+      req.params.employeeId ||
+      req.query.employeeId ||
+      req.user?.userId
+    ) as string;
+
+    if (!targetEmployeeId) {
+      throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
+    }
+
+    if (
+      req.user?.role === "EMPLOYEE" &&
+      req.user?.userId !== targetEmployeeId
+    ) {
+      throw new AppError(
+        "You cannot view another employee's attendance summary",
+        403,
+        "FORBIDDEN"
+      );
+    }
+
+    if (req.user?.role === "MANAGER" && req.user?.userId !== targetEmployeeId) {
+      const targetEmp = await Employee.findById(targetEmployeeId);
+      if (targetEmp?.managerId?.toString() !== req.user.userId) {
+        throw new AppError(
+          "You can only view attendance summary for your team members",
+          403,
+          "FORBIDDEN"
+        );
+      }
+    }
+
     const year = Number(req.query.year) || new Date().getFullYear();
     const month = Number(req.query.month) || new Date().getMonth() + 1;
 
     const summary = await getMonthlyAttendanceSummaryService(
-      req.params.employeeId as string,
+      targetEmployeeId,
       year,
       month
     );

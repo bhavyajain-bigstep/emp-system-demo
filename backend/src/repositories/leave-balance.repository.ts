@@ -1,9 +1,9 @@
 import {
   ILeaveBalance,
   LeaveBalance,
-} from "../models/leave-balance.model.js";
+} from "../models/leave-balance.model";
 
-import { Types } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 
 export const findAllBalances =
   async (): Promise<ILeaveBalance[]> => {
@@ -14,7 +14,7 @@ export const findAllBalances =
       )
       .populate(
         "leaveTypeId",
-        "name code annualQuota"
+        "name code annualQuota rules"
       )
       .sort({
         year: -1,
@@ -41,9 +41,10 @@ export const findBalancesByEmployee =
     return LeaveBalance.find(filter)
       .populate(
         "leaveTypeId",
-        "name code annualQuota"
+        "name code annualQuota rules"
       )
       .sort({
+        year: -1,
         leaveTypeId: 1,
       });
   };
@@ -59,7 +60,7 @@ export const findBalanceById =
       )
       .populate(
         "leaveTypeId",
-        "name code annualQuota"
+        "name code annualQuota rules"
       );
   };
 
@@ -67,30 +68,41 @@ export const findBalance =
   async (
     employeeId: string,
     leaveTypeId: string,
-    year: number
+    year: number,
+    session?: ClientSession
   ): Promise<ILeaveBalance | null> => {
-    return LeaveBalance.findOne({
+    const query = LeaveBalance.findOne({
       employeeId:
         new Types.ObjectId(employeeId),
-
       leaveTypeId:
         new Types.ObjectId(leaveTypeId),
-
       year,
     });
+
+    if (session) {
+      query.session(session);
+    }
+
+    return query;
   };
 
 export const createBalance =
   async (
-    data: Partial<ILeaveBalance>
+    data: Partial<ILeaveBalance>,
+    session?: ClientSession
   ): Promise<ILeaveBalance> => {
+    if (session) {
+      const [balance] = await LeaveBalance.create([data], { session });
+      return balance;
+    }
     return LeaveBalance.create(data);
   };
 
 export const updateBalance =
   async (
     id: string,
-    data: Partial<ILeaveBalance>
+    data: Partial<ILeaveBalance>,
+    session?: ClientSession
   ): Promise<ILeaveBalance | null> => {
     return LeaveBalance.findByIdAndUpdate(
       id,
@@ -98,6 +110,49 @@ export const updateBalance =
       {
         new: true,
         runValidators: true,
+        session,
       }
     );
   };
+
+export const deductBalance = async (
+  balanceId: string,
+  days: number,
+  session?: ClientSession
+): Promise<ILeaveBalance | null> => {
+  return LeaveBalance.findByIdAndUpdate(
+    balanceId,
+    {
+      $inc: {
+        used: days,
+        available: -days,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+      session,
+    }
+  );
+};
+
+export const restoreBalance = async (
+  balanceId: string,
+  days: number,
+  session?: ClientSession
+): Promise<ILeaveBalance | null> => {
+  return LeaveBalance.findByIdAndUpdate(
+    balanceId,
+    {
+      $inc: {
+        used: -days,
+        available: days,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+      session,
+    }
+  );
+};

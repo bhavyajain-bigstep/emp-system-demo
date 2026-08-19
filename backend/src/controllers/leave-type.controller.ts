@@ -21,7 +21,8 @@ export const createLeaveType =
     try {
       const leaveType =
         await createLeaveTypeService(
-          req.body
+          req.body,
+          req.user?.userId
         );
 
       return res.status(201).json({
@@ -95,7 +96,8 @@ export const updateLeaveType =
       const leaveType =
         await updateLeaveTypeService(
           req.params.id,
-          req.body
+          req.body,
+          req.user?.userId
         );
 
       return res.status(200).json({
@@ -118,7 +120,8 @@ export const deleteLeaveType =
     try {
       const leaveType =
         await deleteLeaveTypeService(
-          req.params.id
+          req.params.id,
+          req.user?.userId
         );
 
       return res.status(200).json({

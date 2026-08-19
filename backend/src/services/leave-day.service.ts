@@ -1,86 +1,165 @@
-import { Holiday } from "../models/holiday.model";
+import { Holiday, IHoliday } from "../models/holiday.model";
+import { env } from "../config/env";
+import {
+  getLocalDateString,
+  getLocalDayOfWeek,
+  isWeekendDay,
+} from "../utils/timezone.util";
 
-export const calculateLeaveDays =
-  async (
-    fromDate: Date,
-    toDate: Date,
-    excludeWeekends: boolean,
-    excludeMandatoryHolidays: boolean
-  ): Promise<number> => {
-    let days = 0;
+export interface CalculateLeaveDaysOptions {
+  fromDate: Date | string;
+  toDate: Date | string;
+  timezone?: string;
+  excludeWeekends?: boolean;
+  excludeMandatoryHolidays?: boolean;
+  excludeOptionalHolidays?: boolean;
+  weekendDays?: number[];
+}
 
-    const current = new Date(
-      fromDate
-    );
+export interface LeaveDaysCalculationResult {
+  days: number;
+  totalCalendarDays: number;
+  weekendDays: number;
+  holidayDays: number;
+  workingDays: number;
+}
 
-    while (
-      current <= toDate
-    ) {
-      const dayOfWeek =
-        current.getDay();
+const DEFAULT_WEEKEND_DAYS = env.ATTENDANCE_WEEKEND_DAYS
+  ? env.ATTENDANCE_WEEKEND_DAYS.split(",").map(Number)
+  : [0, 6];
 
-      const isWeekend =
-        dayOfWeek === 0 ||
-        dayOfWeek === 6;
+/**
+ * Reusable service for calculating working leave days.
+ * Timezone-aware and queries holidays efficiently in a single query.
+ */
+export async function calculateLeaveDays(
+  fromDate: Date | string,
+  toDate: Date | string,
+  excludeWeekends = true,
+  excludeMandatoryHolidays = true,
+  timezone = "Asia/Kolkata",
+  excludeOptionalHolidays = false
+): Promise<number> {
+  const result = await calculateLeaveDaysDetailed({
+    fromDate,
+    toDate,
+    timezone,
+    excludeWeekends,
+    excludeMandatoryHolidays,
+    excludeOptionalHolidays,
+    weekendDays: DEFAULT_WEEKEND_DAYS,
+  });
 
-      if (
-        excludeWeekends &&
-        isWeekend
-      ) {
-        current.setDate(
-          current.getDate() + 1
-        );
+  return result.days;
+}
 
-        continue;
-      }
+export async function calculateLeaveDaysDetailed(
+  options: CalculateLeaveDaysOptions
+): Promise<LeaveDaysCalculationResult> {
+  const {
+    fromDate,
+    toDate,
+    timezone = "Asia/Kolkata",
+    excludeWeekends = true,
+    excludeMandatoryHolidays = true,
+    excludeOptionalHolidays = false,
+    weekendDays = DEFAULT_WEEKEND_DAYS,
+  } = options;
 
-      if (
-        excludeMandatoryHolidays
-      ) {
-        const startOfDay =
-          new Date(current);
+  const start = new Date(fromDate);
+  const end = new Date(toDate);
 
-        startOfDay.setHours(
-          0,
-          0,
-          0,
-          0
-        );
+  if (start > end) {
+    return {
+      days: 0,
+      totalCalendarDays: 0,
+      weekendDays: 0,
+      holidayDays: 0,
+      workingDays: 0,
+    };
+  }
 
-        const endOfDay =
-          new Date(current);
+  // Get local date strings (YYYY-MM-DD)
+  const startStr = getLocalDateString(start, timezone);
+  const endStr = getLocalDateString(end, timezone);
 
-        endOfDay.setHours(
-          23,
-          59,
-          59,
-          999
-        );
+  // Fetch all holidays spanning the period in a single query
+  const startQueryDate = new Date(start);
+  startQueryDate.setHours(0, 0, 0, 0);
+  startQueryDate.setDate(startQueryDate.getDate() - 1); // buffer for timezone offsets
 
-        const holiday =
-          await Holiday.findOne({
-            date: {
-              $gte: startOfDay,
-              $lte: endOfDay,
-            },
-            optional: false,
-          });
+  const endQueryDate = new Date(end);
+  endQueryDate.setHours(23, 59, 59, 999);
+  endQueryDate.setDate(endQueryDate.getDate() + 1);
 
-        if (holiday) {
-          current.setDate(
-            current.getDate() + 1
-          );
+  const holidays: IHoliday[] = await Holiday.find({
+    date: {
+      $gte: startQueryDate,
+      $lte: endQueryDate,
+    },
+  });
 
-          continue;
-        }
-      }
+  const mandatoryHolidayDates = new Set<string>();
+  const optionalHolidayDates = new Set<string>();
 
-      days += 1;
+  for (const h of holidays) {
+    const hStr = getLocalDateString(h.date, timezone);
+    if (h.optional) {
+      optionalHolidayDates.add(hStr);
+    } else {
+      mandatoryHolidayDates.add(hStr);
+    }
+  }
 
-      current.setDate(
-        current.getDate() + 1
-      );
+  let totalCalendarDays = 0;
+  let weekendCount = 0;
+  let holidayCount = 0;
+  let leaveDays = 0;
+
+  const [startYear, startMonth, startDay] = startStr.split("-").map(Number);
+  const [endYear, endMonth, endDay] = endStr.split("-").map(Number);
+
+  const curr = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+  const finish = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+
+  while (curr <= finish) {
+    totalCalendarDays++;
+    const y = curr.getUTCFullYear();
+    const m = String(curr.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(curr.getUTCDate()).padStart(2, "0");
+    const dateStr = `${y}-${m}-${d}`;
+
+    const isWeekend = isWeekendDay(dateStr, weekendDays);
+    const isMandatoryHoliday = mandatoryHolidayDates.has(dateStr);
+    const isOptionalHoliday = optionalHolidayDates.has(dateStr);
+
+    if (excludeWeekends && isWeekend) {
+      weekendCount++;
+      curr.setUTCDate(curr.getUTCDate() + 1);
+      continue;
     }
 
-    return days;
+    if (excludeMandatoryHolidays && isMandatoryHoliday) {
+      holidayCount++;
+      curr.setUTCDate(curr.getUTCDate() + 1);
+      continue;
+    }
+
+    if (excludeOptionalHolidays && isOptionalHoliday) {
+      holidayCount++;
+      curr.setUTCDate(curr.getUTCDate() + 1);
+      continue;
+    }
+
+    leaveDays++;
+    curr.setUTCDate(curr.getUTCDate() + 1);
+  }
+
+  return {
+    days: leaveDays,
+    totalCalendarDays,
+    weekendDays: weekendCount,
+    holidayDays: holidayCount,
+    workingDays: leaveDays,
   };
+}

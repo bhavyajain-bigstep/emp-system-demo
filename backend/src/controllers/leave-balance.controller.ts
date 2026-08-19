@@ -11,6 +11,7 @@ import {
   getLeaveBalanceService,
   updateLeaveBalanceService,
 } from "../services/leave-balance.service";
+import { AppError } from "../errors/app-error";
 
 export const createLeaveBalance =
   async (
@@ -20,9 +21,10 @@ export const createLeaveBalance =
   ) => {
     try {
       const balance =
-        await createLeaveBalanceService(
-          req.body
-        );
+        await createLeaveBalanceService({
+          ...req.body,
+          actorId: req.user?.userId,
+        });
 
       return res.status(201).json({
         success: true,
@@ -56,6 +58,38 @@ export const getAllLeaveBalances =
     }
   };
 
+export const getMyLeaveBalances =
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const employeeId = req.user?.userId;
+      if (!employeeId) {
+        throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
+      }
+
+      const yearParam = req.query.year;
+      const year = yearParam ? Number(yearParam) : undefined;
+
+      const balances =
+        await getEmployeeLeaveBalancesService(
+          employeeId,
+          year
+        );
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "My leave balances fetched successfully",
+        data: balances,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
 export const getEmployeeLeaveBalances =
   async (
     req: Request<{ employeeId: string }>,
@@ -63,6 +97,21 @@ export const getEmployeeLeaveBalances =
     next: NextFunction
   ) => {
     try {
+      const currentUserId = req.user?.userId;
+      const currentUserRole = req.user?.role;
+
+      // An employee can view their own; HR/Admin can view all; Manager can view team
+      if (
+        currentUserRole === "EMPLOYEE" &&
+        currentUserId !== req.params.employeeId
+      ) {
+        throw new AppError(
+          "You do not have permission to view other employees leave balances",
+          403,
+          "FORBIDDEN"
+        );
+      }
+
       const yearParam =
         req.query.year;
 
@@ -120,7 +169,8 @@ export const updateLeaveBalance =
       const balance =
         await updateLeaveBalanceService(
           req.params.id,
-          req.body.allocated
+          req.body.allocated,
+          req.user?.userId
         );
 
       return res.status(200).json({

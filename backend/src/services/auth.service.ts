@@ -43,6 +43,8 @@ export const loginService = async (
     userId: employee._id.toString(),
     employeeCode: employee.employeeCode,
     role: employee.role,
+    departmentId: employee.departmentId ? employee.departmentId.toString() : undefined,
+    managerId: employee.managerId ? employee.managerId.toString() : undefined,
   });
 
   return {

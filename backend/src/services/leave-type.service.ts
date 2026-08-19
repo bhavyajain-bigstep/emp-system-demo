@@ -12,6 +12,7 @@ import {
   findLeaveTypes,
   updateLeaveType,
 } from "../repositories/leave-type.repository";
+import { logAuditEvent } from "./audit-log.service";
 
 interface LeaveRulesInput {
   allowNegativeBalance: boolean;
@@ -33,7 +34,8 @@ interface CreateLeaveTypeInput {
 
 export const createLeaveTypeService =
   async (
-    data: CreateLeaveTypeInput
+    data: CreateLeaveTypeInput,
+    actorId?: string
   ) => {
     const existingCode =
       await findLeaveTypeByCode(
@@ -72,12 +74,23 @@ export const createLeaveTypeService =
       );
     }
 
-    return createLeaveType({
+    const newLeaveType = await createLeaveType({
       ...data,
       code: data.code.toUpperCase(),
       status:
         data.status ?? "ACTIVE",
     });
+
+    await logAuditEvent({
+      actorId,
+      action: "LEAVE_POLICY_UPDATED",
+      entityType: "LEAVE_TYPE",
+      entityId: newLeaveType._id.toString(),
+      newValue: newLeaveType,
+      metadata: { code: newLeaveType.code, annualQuota: newLeaveType.annualQuota },
+    });
+
+    return newLeaveType;
   };
 
 export const getLeaveTypesService =
@@ -122,7 +135,8 @@ export const getLeaveTypeService =
 export const updateLeaveTypeService =
   async (
     id: string,
-    data: Partial<CreateLeaveTypeInput>
+    data: Partial<CreateLeaveTypeInput>,
+    actorId?: string
   ) => {
     if (
       !Types.ObjectId.isValid(id)
@@ -203,15 +217,27 @@ export const updateLeaveTypeService =
       );
     }
 
-    return updateLeaveType(
+    const updated = await updateLeaveType(
       id,
       data
     );
+
+    await logAuditEvent({
+      actorId,
+      action: "LEAVE_POLICY_UPDATED",
+      entityType: "LEAVE_TYPE",
+      entityId: id,
+      oldValue: existing,
+      newValue: updated,
+    });
+
+    return updated;
   };
 
 export const deleteLeaveTypeService =
   async (
-    id: string
+    id: string,
+    actorId?: string
   ) => {
     if (
       !Types.ObjectId.isValid(id)
@@ -242,10 +268,22 @@ export const deleteLeaveTypeService =
      *
      * Instead, deactivate them.
      */
-    return updateLeaveType(
+    const deactivated = await updateLeaveType(
       id,
       {
         status: "INACTIVE",
       }
     );
+
+    await logAuditEvent({
+      actorId,
+      action: "LEAVE_POLICY_UPDATED",
+      entityType: "LEAVE_TYPE",
+      entityId: id,
+      oldValue: leaveType,
+      newValue: deactivated,
+      metadata: { action: "DEACTIVATED" },
+    });
+
+    return deactivated;
   };

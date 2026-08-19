@@ -6,13 +6,11 @@ import {
   getAttendanceList,
   getMonthlySummary,
 } from "../controllers/attendance.controller";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-// employeeId comes from the route param for now — no auth middleware yet
-// to derive it from a session. Once auth lands, self check-in/out should
-// read employeeId from req.user; keep :employeeId here for HR/Admin
-// manual entry use cases.
+router.use(authenticate);
 
 /**
  * @swagger
@@ -23,18 +21,12 @@ const router = Router();
 
 /**
  * @swagger
- * /attendance/{employeeId}/check-in:
+ * /attendance/check-in:
  *   post:
- *     summary: Check in an employee for today (their local calendar date)
+ *     summary: Check in for the authenticated employee for today
  *     tags: [Attendance]
- *     parameters:
- *       - in: path
- *         name: employeeId
- *         required: true
- *         schema: { type: string }
- *         description: >
- *           Temporary — will move to req.user once auth lands. Currently
- *           anyone can check in any employee.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       201:
  *         description: Checked in successfully
@@ -49,38 +41,21 @@ const router = Router();
  *                   $ref: '#/components/schemas/Attendance'
  *       400:
  *         description: Invalid employee id
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Employee not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
  *         description: Employee has already checked in for today
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/:employeeId/check-in", checkIn);
+router.post("/check-in", checkIn);
 
 /**
  * @swagger
- * /attendance/{employeeId}/check-out:
+ * /attendance/check-out:
  *   post:
- *     summary: Check out an employee for today (their local calendar date)
+ *     summary: Check out for the authenticated employee for today
  *     tags: [Attendance]
- *     parameters:
- *       - in: path
- *         name: employeeId
- *         required: true
- *         schema: { type: string }
- *         description: >
- *           Temporary — will move to req.user once auth lands.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Checked out successfully
@@ -95,49 +70,32 @@ router.post("/:employeeId/check-in", checkIn);
  *                   $ref: '#/components/schemas/Attendance'
  *       400:
  *         description: Invalid employee id, or check-out attempted before check-in
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Employee not found, or no check-in found for today
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
  *         description: Employee has already checked out for today
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/:employeeId/check-out", checkOut);
+router.post("/check-out", checkOut);
 
 /**
  * @swagger
- * /attendance/{employeeId}/summary:
+ * /attendance/summary:
  *   get:
- *     summary: Get an employee's monthly attendance summary
- *     description: >
- *       Working-day count currently excludes configured weekend days only —
- *       company holidays are not yet factored in (see `holidaysExcluded` in
- *       the response, which will be `false` until the Leave module's
- *       Holiday collection is wired in).
+ *     summary: Get monthly attendance summary
  *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: employeeId
- *         required: true
  *         schema: { type: string }
+ *         description: Optional for Managers/HR to view team/employee summary. Defaults to authenticated employee.
  *       - in: query
  *         name: year
  *         schema: { type: integer, example: 2026 }
- *         description: Defaults to the current year if omitted.
  *       - in: query
  *         name: month
  *         schema: { type: integer, minimum: 1, maximum: 12, example: 8 }
- *         description: Defaults to the current month if omitted.
  *     responses:
  *       200:
  *         description: Monthly attendance summary fetched successfully
@@ -147,38 +105,14 @@ router.post("/:employeeId/check-out", checkOut);
  *               type: object
  *               properties:
  *                 success: { type: boolean, example: true }
- *                 message:
- *                   type: string
- *                   example: Monthly attendance summary fetched successfully
+ *                 message: { type: string, example: Monthly attendance summary fetched successfully }
  *                 data:
- *                   type: object
- *                   properties:
- *                     employeeId: { type: string }
- *                     year: { type: integer, example: 2026 }
- *                     month: { type: integer, example: 8 }
- *                     workingDays: { type: integer, example: 21 }
- *                     presentDays: { type: integer, example: 15 }
- *                     lateDays: { type: integer, example: 2 }
- *                     halfDays: { type: integer, example: 1 }
- *                     leaveDays: { type: integer, example: 1 }
- *                     absentDays: { type: integer, example: 2 }
- *                     holidaysExcluded:
- *                       type: boolean
- *                       example: false
- *                       description: Will be true once Holiday exclusion is wired in.
- *       400:
- *         description: Invalid employee id
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Employee not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *                   $ref: '#/components/schemas/MonthlyAttendanceSummary'
  */
+router.get("/summary", getMonthlySummary);
+
+router.post("/:employeeId/check-in", checkIn);
+router.post("/:employeeId/check-out", checkOut);
 router.get("/:employeeId/summary", getMonthlySummary);
 
 /**
@@ -187,6 +121,8 @@ router.get("/:employeeId/summary", getMonthlySummary);
  *   get:
  *     summary: List attendance records
  *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: employeeId
@@ -199,11 +135,9 @@ router.get("/:employeeId/summary", getMonthlySummary);
  *       - in: query
  *         name: from
  *         schema: { type: string, example: "2026-08-01" }
- *         description: Local calendar date (YYYY-MM-DD), inclusive.
  *       - in: query
  *         name: to
  *         schema: { type: string, example: "2026-08-31" }
- *         description: Local calendar date (YYYY-MM-DD), inclusive.
  *       - in: query
  *         name: page
  *         schema: { type: integer, default: 1 }
@@ -219,9 +153,7 @@ router.get("/:employeeId/summary", getMonthlySummary);
  *               type: object
  *               properties:
  *                 success: { type: boolean, example: true }
- *                 message:
- *                   type: string
- *                   example: Attendance records fetched successfully
+ *                 message: { type: string, example: Attendance records fetched successfully }
  *                 data:
  *                   type: array
  *                   items:
@@ -232,3 +164,4 @@ router.get("/:employeeId/summary", getMonthlySummary);
 router.get("/", getAttendanceList);
 
 export default router;
+
