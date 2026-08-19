@@ -149,7 +149,8 @@ export const createEmployeeService = async (
     },
   });
 
-  return employee;
+  const { passwordHash: _passwordHash, ...safeEmployee } = employee.toObject();
+  return safeEmployee;
 };
 
 export const getEmployeeService = async (

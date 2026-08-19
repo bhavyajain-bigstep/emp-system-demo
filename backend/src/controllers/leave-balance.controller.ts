@@ -12,6 +12,7 @@ import {
   updateLeaveBalanceService,
 } from "../services/leave-balance.service";
 import { AppError } from "../errors/app-error";
+import { assertCanAccessEmployee } from "../services/authorization.service";
 
 export const createLeaveBalance =
   async (
@@ -100,17 +101,10 @@ export const getEmployeeLeaveBalances =
       const currentUserId = req.user?.userId;
       const currentUserRole = req.user?.role;
 
-      // An employee can view their own; HR/Admin can view all; Manager can view team
-      if (
-        currentUserRole === "EMPLOYEE" &&
-        currentUserId !== req.params.employeeId
-      ) {
-        throw new AppError(
-          "You do not have permission to view other employees leave balances",
-          403,
-          "FORBIDDEN"
-        );
+      if (!currentUserId || !currentUserRole) {
+        throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
       }
+      await assertCanAccessEmployee(currentUserId, currentUserRole, req.params.employeeId);
 
       const yearParam =
         req.query.year;
@@ -147,6 +141,12 @@ export const getLeaveBalance =
         await getLeaveBalanceService(
           req.params.id
         );
+
+      const employeeId = (balance.employeeId as any)?._id?.toString() ?? balance.employeeId.toString();
+      if (!req.user) {
+        throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
+      }
+      await assertCanAccessEmployee(req.user.userId, req.user.role, employeeId);
 
       return res.status(200).json({
         success: true,

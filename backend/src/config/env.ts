@@ -44,4 +44,13 @@ export const env = {
   ATTENDANCE_WEEKEND_DAYS: optionalEnv("ATTENDANCE_WEEKEND_DAYS", "0,6"), // Sun,Sat
 };
 
+if (env.NODE_ENV === "production") {
+  requireEnv("MONGO_URI");
+  const jwtSecret = requireEnv("JWT_SECRET");
+
+  if (jwtSecret === "dev_secret_change_me") {
+    throw new Error("JWT_SECRET must not use the development default in production");
+  }
+}
+
 export type Env = typeof env;

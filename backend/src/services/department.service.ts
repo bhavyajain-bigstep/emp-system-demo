@@ -10,6 +10,7 @@ import {
   findDepartments,
   updateDepartment,
 } from "../repositories/department.repository";
+import { countActiveEmployeesInDepartment } from "../repositories/employee.repository";
 
 export const createDepartmentService = async (
   name: string,
@@ -167,6 +168,15 @@ export const deleteDepartmentService = async (
       "Department not found",
       404,
       "DEPARTMENT_NOT_FOUND"
+    );
+  }
+
+  const activeEmployees = await countActiveEmployeesInDepartment(id);
+  if (activeEmployees > 0) {
+    throw new AppError(
+      "Department cannot be deleted while it has active employees",
+      409,
+      "DEPARTMENT_HAS_ACTIVE_EMPLOYEES"
     );
   }
 

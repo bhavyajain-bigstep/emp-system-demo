@@ -132,11 +132,13 @@ export const getAttendanceListService = async (
   employeeId?: string,
   status?: string,
   from?: string,
-  to?: string
+  to?: string,
+  scopedEmployeeIds?: string[]
 ) => {
   const filter: Record<string, unknown> = {};
 
   if (employeeId) filter.employeeId = employeeId;
+  else if (scopedEmployeeIds) filter.employeeId = { $in: scopedEmployeeIds };
   if (status) filter.status = status;
 
   if (from || to) {

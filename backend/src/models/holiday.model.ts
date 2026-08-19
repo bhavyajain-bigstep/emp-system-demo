@@ -25,7 +25,6 @@ const holidaySchema =
       date: {
         type: Date,
         required: true,
-        index: true,
       },
 
       name: {

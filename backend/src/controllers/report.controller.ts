@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import {
   getAttendanceReportService,
-  exportAttendanceReportCsv,
+  streamAttendanceReportCsv,
   getLeaveReportService,
-  exportLeaveReportCsv,
+  streamLeaveReportCsv,
 } from "../services/report.service";
+import { getPagination } from "../utils/pagination.util";
 
 export const getAttendanceReport = async (
   req: Request,
@@ -12,8 +13,7 @@ export const getAttendanceReport = async (
   next: NextFunction
 ) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 20;
+    const { page, limit } = getPagination(req.query.page, req.query.limit, 20);
 
     const filter = {
       startDate: req.query.startDate as string | undefined,
@@ -67,8 +67,6 @@ export const exportAttendanceReport = async (
       ? { userId: req.user.userId, role: req.user.role }
       : undefined;
 
-    const csvData = await exportAttendanceReportCsv(filter, auth);
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     res.setHeader("Content-Type", "text/csv");
     res.setHeader(
@@ -76,7 +74,9 @@ export const exportAttendanceReport = async (
       `attachment; filename="attendance-report-${timestamp}.csv"`
     );
 
-    return res.status(200).send(csvData);
+    const stream = streamAttendanceReportCsv(filter, auth);
+    stream.on("error", next);
+    stream.pipe(res);
   } catch (error) {
     next(error);
   }
@@ -88,8 +88,7 @@ export const getLeaveReport = async (
   next: NextFunction
 ) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 20;
+    const { page, limit } = getPagination(req.query.page, req.query.limit, 20);
 
     const filter = {
       startDate: req.query.startDate as string | undefined,
@@ -145,8 +144,6 @@ export const exportLeaveReport = async (
       ? { userId: req.user.userId, role: req.user.role }
       : undefined;
 
-    const csvData = await exportLeaveReportCsv(filter, auth);
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     res.setHeader("Content-Type", "text/csv");
     res.setHeader(
@@ -154,7 +151,9 @@ export const exportLeaveReport = async (
       `attachment; filename="leave-report-${timestamp}.csv"`
     );
 
-    return res.status(200).send(csvData);
+    const stream = streamLeaveReportCsv(filter, auth);
+    stream.on("error", next);
+    stream.pipe(res);
   } catch (error) {
     next(error);
   }

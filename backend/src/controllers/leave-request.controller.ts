@@ -14,6 +14,7 @@ import {
 } from "../services/leave-request.service";
 import { findLeaveRequestById } from "../repositories/leave-request.repository";
 import { AppError } from "../errors/app-error";
+import { assertCanAccessEmployee } from "../services/authorization.service";
 
 export const createLeaveRequest =
   async (
@@ -121,16 +122,10 @@ export const getLeaveRequest =
         ? (request.employeeId as any)._id.toString()
         : request.employeeId.toString();
 
-      if (
-        req.user?.role === "EMPLOYEE" &&
-        req.user?.userId !== employeeIdStr
-      ) {
-        throw new AppError(
-          "You do not have permission to view this leave request",
-          403,
-          "FORBIDDEN"
-        );
+      if (!req.user) {
+        throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
       }
+      await assertCanAccessEmployee(req.user.userId, req.user.role, employeeIdStr);
 
       return res.status(200).json({
         success: true,

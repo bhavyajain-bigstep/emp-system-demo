@@ -4,6 +4,7 @@ import { LeaveRequest, ILeaveRequest } from "../models/leave-request.model";
 import { Employee } from "../models/employee.model";
 import { AppError } from "../errors/app-error";
 import { stringify } from "csv-stringify/sync";
+import { Readable } from "stream";
 
 export interface AttendanceReportFilter {
   startDate?: string;
@@ -190,6 +191,28 @@ export const exportAttendanceReportCsv = async (
   return stringify(rows, { header: true });
 };
 
+export const streamAttendanceReportCsv = (
+  filter: AttendanceReportFilter,
+  auth?: AuthContext
+): Readable => {
+  const columns = ["Employee Code", "Employee Name", "Department", "Date", "Status", "Check-In Time", "Check-Out Time", "Working Hours", "Working Minutes", "Late", "Timezone"];
+  async function* rows() {
+    yield stringify([], { header: true, columns });
+    for (let page = 1; ; page++) {
+      const result = await getAttendanceReportService(filter, page, 100, auth);
+      if (result.records.length === 0) return;
+      yield stringify(result.records.map((r) => {
+        const emp = r.employee as any;
+        return [emp?.employeeCode || "", emp?.name || "", emp?.departmentId?.name || "", r.date, r.status,
+          r.checkInAt ? new Date(r.checkInAt).toISOString() : "", r.checkOutAt ? new Date(r.checkOutAt).toISOString() : "",
+          r.workingHours, r.workingMinutes, r.isLate ? "YES" : "NO", r.timezone || ""];
+      }), { header: false, columns });
+      if (result.records.length < 100) return;
+    }
+  }
+  return Readable.from(rows());
+};
+
 export const getLeaveReportService = async (
   filter: LeaveReportFilter,
   page = 1,
@@ -289,4 +312,27 @@ export const exportLeaveReportCsv = async (
   });
 
   return stringify(rows, { header: true });
+};
+
+export const streamLeaveReportCsv = (
+  filter: LeaveReportFilter,
+  auth?: AuthContext
+): Readable => {
+  const columns = ["Leave ID", "Employee Code", "Employee Name", "Department", "Leave Type", "From Date", "To Date", "Days", "Status", "Reason", "Approved / Action By", "Approved At", "Rejection Reason", "Cancelled At", "Created At"];
+  async function* rows() {
+    yield stringify([], { header: true, columns });
+    for (let page = 1; ; page++) {
+      const result = await getLeaveReportService(filter, page, 100, auth);
+      if (result.records.length === 0) return;
+      yield stringify(result.records.map((r: any) => [
+        r._id.toString(), r.employeeId?.employeeCode || "", r.employeeId?.name || "", r.employeeId?.departmentId?.name || "",
+        r.leaveTypeId?.name || "", r.fromDate ? new Date(r.fromDate).toISOString().split("T")[0] : "",
+        r.toDate ? new Date(r.toDate).toISOString().split("T")[0] : "", r.days, r.status, r.reason || "",
+        r.approvedBy?.name || "", r.approvedAt ? new Date(r.approvedAt).toISOString() : "", r.rejectionReason || "",
+        r.cancelledAt ? new Date(r.cancelledAt).toISOString() : "", r.createdAt ? new Date(r.createdAt).toISOString() : "",
+      ]), { header: false, columns });
+      if (result.records.length < 100) return;
+    }
+  }
+  return Readable.from(rows());
 };

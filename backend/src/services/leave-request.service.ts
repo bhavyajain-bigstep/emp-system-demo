@@ -1,9 +1,10 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 import { AppError } from "../errors/app-error";
 
 import { Employee } from "../models/employee.model";
 import { LeaveType } from "../models/leave-type.model";
+import { LeaveRequest } from "../models/leave-request.model";
 
 import {
   createLeaveRequest,
@@ -444,37 +445,43 @@ export const approveLeaveRequestService =
       );
     }
 
-    /*
-     * Deduct balance atomically.
-     */
-    const updatedBalance =
-      await deductBalance(
-        balance._id.toString(),
-        request.days
-      );
+    let approved;
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const transactionalRequest = await LeaveRequest.findById(requestId).session(session);
+        if (!transactionalRequest || transactionalRequest.status !== "PENDING") {
+          throw new AppError("Only pending leave requests can be approved", 400, "INVALID_LEAVE_REQUEST_STATUS");
+        }
+        const transactionalBalance = await findBalance(
+          employeeIdStr,
+          leaveTypeIdStr,
+          request.fromDate.getFullYear(),
+          session
+        );
+        if (!transactionalBalance || (!leaveType.rules.allowNegativeBalance && transactionalBalance.available < request.days)) {
+          throw new AppError("Insufficient leave balance at approval time", 400, "INSUFFICIENT_LEAVE_BALANCE");
+        }
 
-    if (!updatedBalance) {
-      throw new AppError(
-        "Failed to update leave balance",
-        500,
-        "BALANCE_UPDATE_FAILED"
-      );
+        const updatedBalance = await deductBalance(
+          transactionalBalance._id.toString(), request.days, session
+        );
+        if (!updatedBalance) {
+          throw new AppError("Failed to update leave balance", 500, "BALANCE_UPDATE_FAILED");
+        }
+
+        approved = await updateLeaveRequest(requestId, {
+          status: "APPROVED",
+          approvedBy: new Types.ObjectId(approverId),
+          approvedAt: new Date(),
+        }, session);
+        if (!approved) {
+          throw new AppError("Failed to approve leave request", 500, "LEAVE_REQUEST_UPDATE_FAILED");
+        }
+      });
+    } finally {
+      await session.endSession();
     }
-
-    /*
-     * Approve request.
-     */
-    const approved = await updateLeaveRequest(
-      requestId,
-      {
-        status: "APPROVED",
-        approvedBy:
-          new Types.ObjectId(
-            approverId
-          ),
-        approvedAt: new Date(),
-      }
-    );
 
     await logAuditEvent({
       actorId: approverId,
@@ -720,29 +727,34 @@ export const cancelLeaveRequestService =
 
     const employee = await Employee.findById(employeeIdStr);
 
-    // If request was approved, restore the consumed balance
-    if (request.status === "APPROVED") {
-      const balance = await findBalance(
-        employeeIdStr,
-        leaveTypeIdStr,
-        request.fromDate.getFullYear()
-      );
+    let cancelled;
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const transactionalRequest = await LeaveRequest.findById(requestId).session(session);
+        if (!transactionalRequest || (transactionalRequest.status !== "PENDING" && transactionalRequest.status !== "APPROVED")) {
+          throw new AppError("Leave request can no longer be cancelled", 400, "INVALID_LEAVE_REQUEST_STATUS");
+        }
+        if (transactionalRequest.status === "APPROVED") {
+          const balance = await findBalance(
+            employeeIdStr, leaveTypeIdStr, transactionalRequest.fromDate.getFullYear(), session
+          );
+          if (!balance || !await restoreBalance(balance._id.toString(), transactionalRequest.days, session)) {
+            throw new AppError("Failed to restore leave balance", 500, "BALANCE_UPDATE_FAILED");
+          }
+        }
 
-      if (balance) {
-        await restoreBalance(
-          balance._id.toString(),
-          request.days
-        );
-      }
+        cancelled = await updateLeaveRequest(requestId, {
+          status: "CANCELLED",
+          cancelledAt: new Date(),
+        }, session);
+        if (!cancelled) {
+          throw new AppError("Failed to cancel leave request", 500, "LEAVE_REQUEST_UPDATE_FAILED");
+        }
+      });
+    } finally {
+      await session.endSession();
     }
-
-    const cancelled = await updateLeaveRequest(
-      requestId,
-      {
-        status: "CANCELLED",
-        cancelledAt: new Date(),
-      }
-    );
 
     await logAuditEvent({
       actorId: userId,

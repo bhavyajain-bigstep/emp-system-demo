@@ -8,6 +8,8 @@ import {
 } from "../services/attendance.service";
 import { AppError } from "../errors/app-error";
 import { Employee } from "../models/employee.model";
+import { assertCanAccessEmployee } from "../services/authorization.service";
+import { getPagination } from "../utils/pagination.util";
 
 export const checkIn = async (
   req: Request,
@@ -21,10 +23,7 @@ export const checkIn = async (
       throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
     }
 
-    if (
-      req.user?.role === "EMPLOYEE" &&
-      req.user?.userId !== targetEmployeeId
-    ) {
+    if (req.user?.userId !== targetEmployeeId && req.user?.role !== "HR" && req.user?.role !== "ADMIN") {
       throw new AppError(
         "You cannot check in for another employee",
         403,
@@ -56,10 +55,7 @@ export const checkOut = async (
       throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
     }
 
-    if (
-      req.user?.role === "EMPLOYEE" &&
-      req.user?.userId !== targetEmployeeId
-    ) {
+    if (req.user?.userId !== targetEmployeeId && req.user?.role !== "HR" && req.user?.role !== "ADMIN") {
       throw new AppError(
         "You cannot check out for another employee",
         403,
@@ -85,8 +81,7 @@ export const getAttendanceList = async (
   next: NextFunction
 ) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const { page, limit } = getPagination(req.query.page, req.query.limit, 10);
 
     let employeeId = req.query.employeeId as string | undefined;
     const status = req.query.status as string | undefined;
@@ -95,7 +90,13 @@ export const getAttendanceList = async (
 
     if (req.user?.role === "EMPLOYEE") {
       employeeId = req.user.userId;
+    } else if (req.user?.role === "MANAGER" && employeeId) {
+      await assertCanAccessEmployee(req.user.userId, req.user.role, employeeId);
     }
+
+    const scopedEmployeeIds = req.user?.role === "MANAGER"
+      ? (await Employee.find({ managerId: req.user.userId }).select("_id")).map((employee) => employee._id.toString())
+      : undefined;
 
     const result = await getAttendanceListService(
       page,
@@ -103,7 +104,8 @@ export const getAttendanceList = async (
       employeeId,
       status,
       from,
-      to
+      to,
+      scopedEmployeeIds
     );
 
     return res.status(200).json({
@@ -138,26 +140,8 @@ export const getMonthlySummary = async (
       throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
     }
 
-    if (
-      req.user?.role === "EMPLOYEE" &&
-      req.user?.userId !== targetEmployeeId
-    ) {
-      throw new AppError(
-        "You cannot view another employee's attendance summary",
-        403,
-        "FORBIDDEN"
-      );
-    }
-
-    if (req.user?.role === "MANAGER" && req.user?.userId !== targetEmployeeId) {
-      const targetEmp = await Employee.findById(targetEmployeeId);
-      if (targetEmp?.managerId?.toString() !== req.user.userId) {
-        throw new AppError(
-          "You can only view attendance summary for your team members",
-          403,
-          "FORBIDDEN"
-        );
-      }
+    if (req.user) {
+      await assertCanAccessEmployee(req.user.userId, req.user.role, targetEmployeeId);
     }
 
     const year = Number(req.query.year) || new Date().getFullYear();

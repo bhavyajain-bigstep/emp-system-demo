@@ -3,7 +3,7 @@ import {
   LeaveRequest,
 } from "../models/leave-request.model";
 
-import { Types } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 
 export const createLeaveRequest =
   async (
@@ -100,7 +100,8 @@ export const findOverlappingLeave =
 export const updateLeaveRequest =
   async (
     id: string,
-    data: Partial<ILeaveRequest>
+    data: Partial<ILeaveRequest>,
+    session?: ClientSession
   ): Promise<ILeaveRequest | null> => {
     return LeaveRequest.findByIdAndUpdate(
       id,
@@ -108,6 +109,7 @@ export const updateLeaveRequest =
       {
         new: true,
         runValidators: true,
+        session,
       }
     );
   };

@@ -11,6 +11,7 @@ import {
   updateEmployeeService,
 } from "../services/employee.service";
 import { AppError } from "../errors/app-error";
+import { getPagination } from "../utils/pagination.util";
 
 export const createEmployee = async (
   req: Request,
@@ -39,8 +40,7 @@ export const getEmployees = async (
   next: NextFunction
 ) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const { page, limit } = getPagination(req.query.page, req.query.limit, 10);
 
     const departmentId =
       req.query.departmentId as string | undefined;
