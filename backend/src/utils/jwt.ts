@@ -1,14 +1,9 @@
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "../types/auth.types";
+import { env } from "../config/env";
 
 const getJwtSecret = (): string => {
-  const secret = process.env.JWT_SECRET;
-
-  if (!secret) {
-    throw new Error("JWT_SECRET is not defined");
-  }
-
-  return secret;
+  return env.JWT_SECRET;
 };
 
 export const generateAccessToken = (
