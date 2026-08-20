@@ -22,6 +22,23 @@ Authorization decisions live in `src/services/authorization.service.ts`.
 Controllers must call into that service and must not do ad-hoc role
 comparisons or `Employee.findById(...).managerId` checks.
 
+## Middleware stack
+
+Every authenticated route is protected by:
+
+1. `correlationMiddleware` — attaches/propagates `X-Correlation-ID` and logs request lifecycle.
+2. `authenticate` (`auth.middleware.ts`) — verifies the `Authorization: Bearer <jwt>` header and loads `req.user`.
+3. `authorize(...roles)` (`role.middleware.ts`) — blocks the request if `req.user.role` is not in the allowed list.
+4. `validate(schema)` (`validate.middleware.ts`) — Zod-validates the request body or query.
+
+Resource-level checks (self, direct report, team) happen inside the controller by calling helpers in `authorization.service.ts`:
+
+- `assertCanReadEmployeeRecord(actor, targetEmployeeId)`
+- `assertCanWriteEmployeeAttendance(actor, targetEmployeeId)`
+- `assertCanApproveLeave(actor, requestEmployeeId, requesterManagerId)`
+- `findDirectReportIds(managerId)`
+- `requireAuthUser(user)`
+
 ## Endpoints
 
 | Method | Path                                              | Auth rule                                                                           |
@@ -66,6 +83,8 @@ comparisons or `Employee.findById(...).managerId` checks.
 | GET    | `/api/v1/reports/attendance/export`               | MANAGER: direct reports only. HR/ADMIN: any employee.                               |
 | GET    | `/api/v1/reports/leave`                           | MANAGER: direct reports only. HR/ADMIN: any employee.                               |
 | GET    | `/api/v1/reports/leave/export`                    | MANAGER: direct reports only. HR/ADMIN: any employee.                               |
+| GET    | `/api/v1/audit-logs`                              | HR or ADMIN only                                                                    |
+| GET    | `/api/v1/audit-logs/:id`                          | HR or ADMIN only                                                                    |
 
 ## Department lifecycle
 
