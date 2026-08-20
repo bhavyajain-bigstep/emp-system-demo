@@ -21,7 +21,7 @@ function paginated<T>(data: T[], pagination: PaginationMeta): Paginated<T> {
   return { items: data, pagination };
 }
 
-function qs(params?: Record<string, unknown>): string {
+function qs(params?: object): string {
   if (!params) return "";
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -118,6 +118,10 @@ export const attendanceApi = {
   },
   async checkOut(): Promise<AttendanceRecord> {
     return unwrap(api.post<ApiResponse<AttendanceRecord>>("/attendance/check-out"));
+  },
+  async today(): Promise<AttendanceRecord | null> {
+    const res = await api.get<ApiResponse<AttendanceRecord | null>>("/attendance/today");
+    return res.data.data ?? null;
   },
   async list(params?: {
     page?: number;

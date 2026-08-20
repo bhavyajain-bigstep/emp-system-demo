@@ -29,7 +29,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-function buildNav(hasRole: (...roles: Role[]) => boolean): NavGroup[] {
+function buildNav(): NavGroup[] {
   return [
     {
       label: "Overview",
@@ -60,7 +60,7 @@ function buildNav(hasRole: (...roles: Role[]) => boolean): NavGroup[] {
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { hasRole } = useAuth();
-  const groups = buildNav(hasRole);
+  const groups = buildNav();
 
   return (
     <>

@@ -5,6 +5,7 @@ import {
   checkOut,
   getAttendanceList,
   getMonthlySummary,
+  getTodayAttendance,
 } from "../controllers/attendance.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 
@@ -47,6 +48,7 @@ router.use(authenticate);
  *         description: Employee has already checked in for today
  */
 router.post("/check-in", checkIn);
+router.get("/today", getTodayAttendance);
 
 /**
  * @swagger

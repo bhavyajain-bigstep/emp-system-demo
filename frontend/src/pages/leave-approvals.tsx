@@ -5,7 +5,7 @@ import { Check, X } from "lucide-react";
 import { leaveApi } from "@/lib/endpoints";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/data-display";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea, Label } from "@/components/ui/field";
 import { Table, THead, TH, TBody, TR, TD } from "@/components/ui/table";

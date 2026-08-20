@@ -12,6 +12,7 @@ import {
   updateEmployee,
 } from "../repositories/employee.repository";
 import { findDepartmentById } from "../repositories/department.repository";
+import { Employee } from "../models/employee.model";
 
 import { AppError } from "../errors/app-error";
 import { logAuditEvent } from "./audit-log.service";
@@ -426,6 +427,30 @@ export const updateEmployeeService = async (
       new Types.ObjectId(
         data.departmentId
       );
+  }
+
+  /*
+   * Lockout safeguard: never allow deactivating the last active ADMIN.
+   */
+  if (
+    data.status !== undefined &&
+    data.status !== "ACTIVE" &&
+    employee.role === "ADMIN" &&
+    employee.status === "ACTIVE"
+  ) {
+    const otherActiveAdmins = await Employee.countDocuments({
+      role: "ADMIN",
+      status: "ACTIVE",
+      _id: { $ne: employee._id },
+    });
+
+    if (otherActiveAdmins === 0) {
+      throw new AppError(
+        "Cannot deactivate the last active admin. Promote another admin first.",
+        400,
+        "LAST_ACTIVE_ADMIN"
+      );
+    }
   }
 
   const updated = await updateEmployee(

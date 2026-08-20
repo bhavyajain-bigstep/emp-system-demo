@@ -106,3 +106,14 @@ export const countActiveEmployeesInDepartment = async (
     status: "ACTIVE",
   });
 };
+
+export const updateRefreshTokenHash = async (
+  id: string,
+  refreshTokenHash: string | null
+): Promise<IEmployee | null> => {
+  return Employee.findByIdAndUpdate(
+    id,
+    { refreshTokenHash },
+    { new: true }
+  ).select("-passwordHash -refreshTokenHash");
+};

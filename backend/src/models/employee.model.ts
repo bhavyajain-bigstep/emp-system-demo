@@ -38,6 +38,8 @@ export interface IEmployee
 
   status: EmployeeStatus;
 
+  refreshTokenHash?: string;
+
   createdAt: Date;
 
   updatedAt: Date;
@@ -114,6 +116,11 @@ const employeeSchema =
           "SUSPENDED",
         ],
         default: "ACTIVE",
+      },
+
+      refreshTokenHash: {
+        type: String,
+        select: false,
       },
     },
     {

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import { Plane, Plus, XCircle } from "lucide-react";
 
 import { leaveApi, leaveTypeApi, leaveBalanceApi } from "@/lib/endpoints";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/data-display";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea, Label, FieldError } from "@/components/ui/field";
 import { Table, THead, TH, TBody, TR, TD } from "@/components/ui/table";

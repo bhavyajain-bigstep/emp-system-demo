@@ -20,11 +20,8 @@ const todayKey = () => format(new Date(), "yyyy-MM-dd");
 
 function useTodayStatus() {
   return useQuery({
-    queryKey: ["attendance", "today", todayKey()],
-    queryFn: async () => {
-      const res = await attendanceApi.list({ from: todayKey(), to: todayKey() });
-      return res.items[0] ?? null;
-    },
+    queryKey: ["attendance", "today"],
+    queryFn: attendanceApi.today,
   });
 }
 

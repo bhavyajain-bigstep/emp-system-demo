@@ -1,20 +1,19 @@
-import {
-  Request,
-  Response,
-  NextFunction,
-} from "express";
+import { Request, Response, NextFunction } from "express";
 
 import { AppError } from "../errors/app-error";
+import { logger } from "../utils/logger";
+import { env } from "../config/env";
 
 export const errorHandler = (
   err: any,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) => {
-  // Don't clutter logs in test environment unless needed
-  if (process.env.NODE_ENV !== "test") {
-    console.error("Error:", err);
+  const requestId = req.headers["x-request-id"] as string | undefined;
+
+  if (env.NODE_ENV !== "test") {
+    logger.error({ err, requestId, path: req.path, method: req.method }, "Unhandled error");
   }
 
   if (err instanceof AppError) {
@@ -23,11 +22,12 @@ export const errorHandler = (
       message: err.message,
       error: {
         code: err.code ?? "APPLICATION_ERROR",
+        requestId,
       },
     });
   }
 
-  // Zod validation error or object with errors
+  // Zod validation error
   if (err?.name === "ZodError" || err?.errors?.fieldErrors || err?.errors?.formErrors) {
     return res.status(400).json({
       success: false,
@@ -35,6 +35,7 @@ export const errorHandler = (
       error: {
         code: "VALIDATION_ERROR",
         details: err.errors ?? err,
+        requestId,
       },
     });
   }
@@ -45,9 +46,7 @@ export const errorHandler = (
     return res.status(409).json({
       success: false,
       message: `A record with this ${field} already exists`,
-      error: {
-        code: "DUPLICATE_KEY_ERROR",
-      },
+      error: { code: "DUPLICATE_KEY_ERROR", requestId },
     });
   }
 
@@ -56,9 +55,7 @@ export const errorHandler = (
     return res.status(400).json({
       success: false,
       message: `Invalid format for ${err.path}: ${err.value}`,
-      error: {
-        code: "INVALID_ID_FORMAT",
-      },
+      error: { code: "INVALID_ID_FORMAT", requestId },
     });
   }
 
@@ -67,9 +64,7 @@ export const errorHandler = (
     return res.status(400).json({
       success: false,
       message: err.message || "Validation failed",
-      error: {
-        code: "VALIDATION_ERROR",
-      },
+      error: { code: "VALIDATION_ERROR", requestId },
     });
   }
 
@@ -78,9 +73,7 @@ export const errorHandler = (
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token",
-      error: {
-        code: "AUTHENTICATION_REQUIRED",
-      },
+      error: { code: "AUTHENTICATION_REQUIRED", requestId },
     });
   }
 
@@ -90,6 +83,7 @@ export const errorHandler = (
       message: err.message || "Request error",
       error: {
         code: err.code || "REQUEST_ERROR",
+        requestId,
         ...(err.errors ? { details: err.errors } : {}),
       },
     });
@@ -98,8 +92,6 @@ export const errorHandler = (
   return res.status(500).json({
     success: false,
     message: "Internal server error",
-    error: {
-      code: "INTERNAL_SERVER_ERROR",
-    },
+    error: { code: "INTERNAL_SERVER_ERROR", requestId },
   });
 };

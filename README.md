@@ -1,8 +1,6 @@
 # Employee Leave & Attendance Management System
 
-A backend-first REST API for managing employees, departments, attendance, and leave workflows for an HR organization — built with a strict layered architecture (Routes → Middleware → Controllers → Services → Repositories → Models).
-
-> Frontend is intentionally not part of this repo yet. This is a backend-only project.
+A full-stack HR platform for managing employees, departments, attendance, and leave workflows — a strict layered REST API (Routes → Middleware → Controllers → Services → Repositories → Models) with a modern React single-page application on top.
 
 ---
 
@@ -20,6 +18,10 @@ A backend-first REST API for managing employees, departments, attendance, and le
 | Security    | Helmet, CORS, rate limiting |
 | Testing     | Jest + Supertest + mongodb-memory-server |
 | Docs        | Swagger / OpenAPI     |
+| Frontend    | React 19 + Vite + TypeScript + Tailwind CSS |
+| Data fetching | TanStack Query + Axios |
+| Charts      | Recharts              |
+| Routing     | React Router          |
 
 ---
 
@@ -135,6 +137,7 @@ backend/
 │   │
 │   ├── utils/
 │   │   ├── jwt.ts
+│   │   ├── transaction.ts             # transaction helper + standalone-DB fallback
 │   │   └── timezone.util.ts
 │   │
 │   ├── validators/
@@ -164,6 +167,28 @@ backend/
 ├── package.json
 ├── jest.config.ts
 └── tsconfig.json
+
+frontend/
+├── public/
+│   └── favicon.svg            # PulseHR brand icon
+├── src/
+│   ├── components/
+│   │   ├── layout/            # Sidebar (role-aware nav), topbar, app shell
+│   │   ├── ui/                # Button, Card, Table, Modal, Badge, Toast, forms, feedback
+│   │   └── guards.tsx         # RequireAuth / RequireRole / PublicOnly route guards
+│   ├── context/auth.tsx       # Auth state, JWT + user persistence, hasRole
+│   ├── lib/                   # Typed API client, endpoints, query client, utils
+│   ├── pages/                 # Login, Dashboard, Attendance, Leaves, Approvals,
+│   │                          # Balances, Holidays, Employees, Departments,
+│   │                          # Leave Types, Reports, Audit Logs
+│   ├── types/index.ts         # Shared domain types
+│   ├── App.tsx                # Route table with guards (lazy-loaded pages)
+│   ├── main.tsx               # Providers: Router, QueryClient, Auth, Toast
+│   └── index.css              # Tailwind v4 theme (PulseHR design tokens)
+├── index.html
+├── package.json
+├── vite.config.ts             # Dev proxy → localhost:5000, @ alias
+└── tsconfig*.json
 
 docs/
 └── Database_Design.md
@@ -253,6 +278,35 @@ npm test   # runs against an in-memory MongoDB replica set
 ### 8. API docs
 
 Swagger UI is served at `http://localhost:5000/api-docs`.
+
+### 9. Run the frontend
+
+With the backend running on `:5000` and MongoDB up:
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
+```
+
+The Vite dev server proxies `/api` and `/health` to the backend, so no CORS setup is needed. Build for production:
+
+```bash
+npm run build      # type-check + bundle to dist/
+```
+
+Sign in with any seed account (see step 6). UI access is role-aware:
+
+| Page          | Roles                             |
+|---------------|-----------------------------------|
+| Dashboard     | Everyone                          |
+| Attendance    | Everyone (team view for non-employees) |
+| My Leaves     | Everyone                          |
+| Leave Approvals | MANAGER, HR, ADMIN               |
+| Leave Balances | Everyone (manage for HR/ADMIN)   |
+| Holidays      | Everyone                          |
+| Employees / Departments / Leave Types / Audit Logs | HR, ADMIN |
+| Reports       | MANAGER, HR, ADMIN               |
 
 ---
 

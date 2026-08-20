@@ -1,8 +1,9 @@
 import { Router } from "express";
 
-import { login } from "../controllers/auth.controller";
+import { login, refresh, logout } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate.middleware";
 import { loginSchema } from "../validators/auth.validator";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -71,5 +72,31 @@ router.post(
   validate(loginSchema),
   login
 );
+
+/**
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Refresh access token using httpOnly cookie
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Token refreshed
+ *       401:
+ *         description: Refresh token missing or invalid
+ */
+router.post("/refresh", refresh);
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Log out and clear refresh token cookie
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logged out
+ */
+router.post("/logout", logout);
 
 export default router;
