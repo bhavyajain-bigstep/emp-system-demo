@@ -148,6 +148,21 @@ export const getLeaveBalance =
           req.params.id
         );
 
+      // Employees can only view their own balance, even when querying by id.
+      if (req.user?.role === "EMPLOYEE") {
+        const ownerId = (balance.employeeId as any)?._id
+          ? (balance.employeeId as any)._id.toString()
+          : (balance.employeeId as any)?.toString?.();
+
+        if (ownerId !== req.user.userId) {
+          throw new AppError(
+            "You do not have permission to view this leave balance",
+            403,
+            "FORBIDDEN"
+          );
+        }
+      }
+
       return res.status(200).json({
         success: true,
         message:

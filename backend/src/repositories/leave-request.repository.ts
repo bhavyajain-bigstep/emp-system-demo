@@ -3,12 +3,17 @@ import {
   LeaveRequest,
 } from "../models/leave-request.model";
 
-import { Types } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 
 export const createLeaveRequest =
   async (
-    data: Partial<ILeaveRequest>
+    data: Partial<ILeaveRequest>,
+    session?: ClientSession
   ): Promise<ILeaveRequest> => {
+    if (session) {
+      const [request] = await LeaveRequest.create([data], { session });
+      return request;
+    }
     return LeaveRequest.create(data);
   };
 
@@ -29,6 +34,17 @@ export const findLeaveRequestById =
         "approvedBy",
         "employeeCode name email role"
       );
+  };
+
+/**
+ * Raw (unpopulated) read used inside write transactions.
+ */
+export const findLeaveRequestByIdForUpdate =
+  async (
+    id: string,
+    session?: ClientSession
+  ): Promise<ILeaveRequest | null> => {
+    return LeaveRequest.findById(id).session(session ?? null);
   };
 
 export const findEmployeeLeaveRequests =
@@ -74,9 +90,10 @@ export const findOverlappingLeave =
   async (
     employeeId: string,
     fromDate: Date,
-    toDate: Date
+    toDate: Date,
+    session?: ClientSession
   ): Promise<ILeaveRequest[]> => {
-    return LeaveRequest.find({
+    const query = LeaveRequest.find({
       employeeId:
         new Types.ObjectId(employeeId),
 
@@ -95,14 +112,21 @@ export const findOverlappingLeave =
         $gte: fromDate,
       },
     });
+
+    if (session) {
+      query.session(session ?? null);
+    }
+
+    return query;
   };
 
 export const updateLeaveRequest =
   async (
     id: string,
-    data: Partial<ILeaveRequest>
+    data: Partial<ILeaveRequest>,
+    session?: ClientSession
   ): Promise<ILeaveRequest | null> => {
-    return LeaveRequest.findByIdAndUpdate(
+    const query = LeaveRequest.findByIdAndUpdate(
       id,
       data,
       {
@@ -110,4 +134,10 @@ export const updateLeaveRequest =
         runValidators: true,
       }
     );
+
+    if (session) {
+      query.session(session ?? null);
+    }
+
+    return query;
   };

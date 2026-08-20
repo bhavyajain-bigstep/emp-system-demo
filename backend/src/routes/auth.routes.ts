@@ -48,10 +48,10 @@ const router = Router();
  *                 data:
  *                   type: object
  *                   properties:
- *                     token:
+ *                     accessToken:
  *                       type: string
  *                       description: JWT bearer token
- *                     employee:
+ *                     user:
  *                       $ref: '#/components/schemas/Employee'
  *       400:
  *         description: Validation failed

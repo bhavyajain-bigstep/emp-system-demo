@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 import { createAuditLog, findAuditLogs } from "../repositories/audit-log.repository";
 
 interface LogActionInput {
@@ -11,6 +11,7 @@ interface LogActionInput {
   metadata?: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
+  session?: ClientSession;
 }
 
 const SENSITIVE_KEYS = new Set([
@@ -58,17 +59,20 @@ export const logAuditEvent = async (input: LogActionInput) => {
         : undefined
       : undefined;
 
-    return await createAuditLog({
-      actorId,
-      action: input.action,
-      entityType: input.entityType,
-      entityId,
-      oldValue: input.oldValue ? sanitize(input.oldValue) : undefined,
-      newValue: input.newValue ? sanitize(input.newValue) : undefined,
-      metadata: input.metadata ? sanitize(input.metadata) : undefined,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
+    return await createAuditLog(
+      {
+        actorId,
+        action: input.action,
+        entityType: input.entityType,
+        entityId,
+        oldValue: input.oldValue ? sanitize(input.oldValue) : undefined,
+        newValue: input.newValue ? sanitize(input.newValue) : undefined,
+        metadata: input.metadata ? sanitize(input.metadata) : undefined,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      },
+      input.session
+    );
   } catch (error) {
     // Non-blocking error for audit logging failure
     console.error("Audit log error:", error);

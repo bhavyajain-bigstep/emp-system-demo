@@ -13,6 +13,7 @@ import { errorHandler } from "./middlewares/error.middleware";
 import leaveRequestRoutes from "./routes/leave-request.routes";
 import holidayRoutes from "./routes/holiday.routes";
 import reportRoutes from "./routes/report.routes";
+import auditLogRoutes from "./routes/audit-log.routes";
 import rateLimit from "express-rate-limit";
 
 const app = express();
@@ -71,6 +72,8 @@ app.use("/api/v1/employees", employeeRoutes);
 app.use("/api/v1/departments", departmentRoutes);
 
 app.use("/api/v1/reports", reportRoutes);
+
+app.use("/api/v1/audit-logs", auditLogRoutes);
 
 
 // 404 handler

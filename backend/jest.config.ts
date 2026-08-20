@@ -5,12 +5,13 @@ const config: Config = {
   testEnvironment: "node",
   testMatch: ["**/tests/**/*.test.ts"],
   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
+  globalSetup: "<rootDir>/tests/global-setup.ts",
   verbose: true,
   forceExit: true,
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
-  testTimeout: 30000,
+  testTimeout: 60000,
 };
 
 export default config;

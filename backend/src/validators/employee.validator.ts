@@ -29,10 +29,14 @@ export const createEmployeeSchema = z.object({
 
   departmentId: z
     .string()
-    .optional(),
+    .min(1),
 
   joiningDate: z
-    .string(),
+    .string()
+    .refine(
+      (value) => !Number.isNaN(new Date(value).getTime()),
+      { message: "joiningDate must be a valid date" }
+    ),
 
   timezone: z
     .string()

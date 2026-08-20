@@ -9,6 +9,7 @@ import {
   createLeaveRequest,
   findEmployeeLeaveRequests,
   findLeaveRequestById,
+  findLeaveRequestByIdForUpdate,
   findOverlappingLeave,
   findPendingLeaveRequests,
   updateLeaveRequest,
@@ -24,6 +25,7 @@ import {
 import { calculateLeaveDays } from "./leave-day.service";
 import { logAuditEvent } from "./audit-log.service";
 import { notificationService } from "./notification.service";
+import { runInTransaction } from "../utils/transaction";
 
 interface CreateLeaveRequestInput {
   employeeId: string;
@@ -318,175 +320,205 @@ export const approveLeaveRequestService =
       );
     }
 
+    let approved: any;
+
+    await runInTransaction(async (session) => {
+      const request =
+        await findLeaveRequestByIdForUpdate(
+          requestId,
+          session
+        );
+
+      if (!request) {
+        throw new AppError(
+          "Leave request not found",
+          404,
+          "LEAVE_REQUEST_NOT_FOUND"
+        );
+      }
+
+      if (
+        request.status !== "PENDING"
+      ) {
+        throw new AppError(
+          "Only pending leave requests can be approved",
+          400,
+          "INVALID_LEAVE_REQUEST_STATUS"
+        );
+      }
+
+      const employeeIdStr =
+        request.employeeId.toString();
+
+      // Prevent self-approval
+      if (employeeIdStr === approverId) {
+        throw new AppError(
+          "You cannot approve your own leave request",
+          403,
+          "CANNOT_APPROVE_OWN_LEAVE"
+        );
+      }
+
+      const employee =
+        await Employee.findById(
+          request.employeeId
+        ).session(session ?? null);
+
+      if (!employee) {
+        throw new AppError(
+          "Employee not found",
+          404,
+          "EMPLOYEE_NOT_FOUND"
+        );
+      }
+
+      const approver =
+        await Employee.findById(
+          approverId
+        ).session(session ?? null);
+
+      if (!approver) {
+        throw new AppError(
+          "Approver not found",
+          404,
+          "APPROVER_NOT_FOUND"
+        );
+      }
+
+      const isHR =
+        approver.role === "HR" ||
+        approver.role === "ADMIN";
+
+      const isManager =
+        employee.managerId &&
+        employee.managerId.toString() ===
+          approverId;
+
+      if (
+        !isHR &&
+        !isManager
+      ) {
+        throw new AppError(
+          "You are not authorized to approve this leave request",
+          403,
+          "NOT_AUTHORIZED_TO_APPROVE"
+        );
+      }
+
+      const leaveTypeIdStr =
+        request.leaveTypeId.toString();
+
+      const leaveType =
+        await LeaveType.findById(
+          request.leaveTypeId
+        ).session(session ?? null);
+
+      if (!leaveType) {
+        throw new AppError(
+          "Leave type not found",
+          404,
+          "LEAVE_TYPE_NOT_FOUND"
+        );
+      }
+
+      /*
+       * Re-verify balance immediately before approval.
+       */
+      const balance =
+        await findBalance(
+          employeeIdStr,
+          leaveTypeIdStr,
+          request.fromDate.getFullYear(),
+          session
+        );
+
+      if (!balance) {
+        throw new AppError(
+          "Leave balance not found",
+          404,
+          "LEAVE_BALANCE_NOT_FOUND"
+        );
+      }
+
+      if (
+        !leaveType.rules.allowNegativeBalance &&
+        balance.available < request.days
+      ) {
+        throw new AppError(
+          "Insufficient leave balance at approval time",
+          400,
+          "INSUFFICIENT_LEAVE_BALANCE"
+        );
+      }
+
+      /*
+       * Deduct balance atomically.
+       */
+      const updatedBalance =
+        await deductBalance(
+          balance._id.toString(),
+          request.days,
+          session
+        );
+
+      if (!updatedBalance) {
+        throw new AppError(
+          "Failed to update leave balance",
+          500,
+          "BALANCE_UPDATE_FAILED"
+        );
+      }
+
+      /*
+       * Approve request.
+       */
+      approved = await updateLeaveRequest(
+        requestId,
+        {
+          status: "APPROVED",
+          approvedBy:
+            new Types.ObjectId(
+              approverId
+            ),
+          approvedAt: new Date(),
+        },
+        session
+      );
+
+      await logAuditEvent({
+        actorId: approverId,
+        action: "LEAVE_APPROVED",
+        entityType: "LEAVE_REQUEST",
+        entityId: requestId,
+        oldValue: { status: "PENDING" },
+        newValue: { status: "APPROVED", approvedBy: approverId, approvedAt: new Date() },
+        metadata: { days: request.days, employeeId: employeeIdStr },
+        session,
+      });
+    });
+
     const request =
       await findLeaveRequestById(
         requestId
       );
 
-    if (!request) {
-      throw new AppError(
-        "Leave request not found",
-        404,
-        "LEAVE_REQUEST_NOT_FOUND"
-      );
-    }
+    if (request) {
+      const employee =
+        await Employee.findById(
+          (request.employeeId as any)?._id
+            ? (request.employeeId as any)._id
+            : request.employeeId
+        );
 
-    if (
-      request.status !== "PENDING"
-    ) {
-      throw new AppError(
-        "Only pending leave requests can be approved",
-        400,
-        "INVALID_LEAVE_REQUEST_STATUS"
-      );
-    }
+      const approver =
+        await Employee.findById(
+          approverId
+        );
 
-    const employeeIdStr =
-      (request.employeeId as any)?._id
-        ? (request.employeeId as any)._id.toString()
-        : request.employeeId.toString();
-
-    // Prevent self-approval
-    if (employeeIdStr === approverId) {
-      throw new AppError(
-        "You cannot approve your own leave request",
-        403,
-        "CANNOT_APPROVE_OWN_LEAVE"
-      );
-    }
-
-    const employee =
-      await Employee.findById(
-        employeeIdStr
-      );
-
-    if (!employee) {
-      throw new AppError(
-        "Employee not found",
-        404,
-        "EMPLOYEE_NOT_FOUND"
-      );
-    }
-
-    const approver =
-      await Employee.findById(
-        approverId
-      );
-
-    if (!approver) {
-      throw new AppError(
-        "Approver not found",
-        404,
-        "APPROVER_NOT_FOUND"
-      );
-    }
-
-    const isHR =
-      approver.role === "HR" ||
-      approver.role === "ADMIN";
-
-    const isManager =
-      employee.managerId &&
-      employee.managerId.toString() ===
-        approverId;
-
-    if (
-      !isHR &&
-      !isManager
-    ) {
-      throw new AppError(
-        "You are not authorized to approve this leave request",
-        403,
-        "NOT_AUTHORIZED_TO_APPROVE"
-      );
-    }
-
-    const leaveTypeIdStr =
-      (request.leaveTypeId as any)?._id
-        ? (request.leaveTypeId as any)._id.toString()
-        : request.leaveTypeId.toString();
-
-    const leaveType = await LeaveType.findById(leaveTypeIdStr);
-    if (!leaveType) {
-      throw new AppError(
-        "Leave type not found",
-        404,
-        "LEAVE_TYPE_NOT_FOUND"
-      );
-    }
-
-    /*
-     * Re-verify balance immediately before approval.
-     */
-    const balance =
-      await findBalance(
-        employeeIdStr,
-        leaveTypeIdStr,
-        request.fromDate.getFullYear()
-      );
-
-    if (!balance) {
-      throw new AppError(
-        "Leave balance not found",
-        404,
-        "LEAVE_BALANCE_NOT_FOUND"
-      );
-    }
-
-    if (
-      !leaveType.rules.allowNegativeBalance &&
-      balance.available < request.days
-    ) {
-      throw new AppError(
-        "Insufficient leave balance at approval time",
-        400,
-        "INSUFFICIENT_LEAVE_BALANCE"
-      );
-    }
-
-    /*
-     * Deduct balance atomically.
-     */
-    const updatedBalance =
-      await deductBalance(
-        balance._id.toString(),
-        request.days
-      );
-
-    if (!updatedBalance) {
-      throw new AppError(
-        "Failed to update leave balance",
-        500,
-        "BALANCE_UPDATE_FAILED"
-      );
-    }
-
-    /*
-     * Approve request.
-     */
-    const approved = await updateLeaveRequest(
-      requestId,
-      {
-        status: "APPROVED",
-        approvedBy:
-          new Types.ObjectId(
-            approverId
-          ),
-        approvedAt: new Date(),
+      if (employee && approver) {
+        await notificationService.notifyLeaveApproved(request, employee, approver);
       }
-    );
-
-    await logAuditEvent({
-      actorId: approverId,
-      action: "LEAVE_APPROVED",
-      entityType: "LEAVE_REQUEST",
-      entityId: requestId,
-      oldValue: { status: "PENDING" },
-      newValue: { status: "APPROVED", approvedBy: approverId, approvedAt: new Date() },
-      metadata: { days: request.days, employeeId: employeeIdStr },
-    });
-
-    await notificationService.notifyLeaveApproved(approved, employee, approver);
+    }
 
     return approved;
   };
@@ -521,107 +553,134 @@ export const rejectLeaveRequestService =
       );
     }
 
+    let rejected: any;
+
+    await runInTransaction(async (session) => {
+      const request =
+        await findLeaveRequestByIdForUpdate(
+          requestId,
+          session
+        );
+
+      if (!request) {
+        throw new AppError(
+          "Leave request not found",
+          404,
+          "LEAVE_REQUEST_NOT_FOUND"
+        );
+      }
+
+      if (
+        request.status !== "PENDING"
+      ) {
+        throw new AppError(
+          "Only pending leave requests can be rejected",
+          400,
+          "INVALID_LEAVE_REQUEST_STATUS"
+        );
+      }
+
+      const employeeIdStr =
+        request.employeeId.toString();
+
+      // Prevent self-rejection
+      if (employeeIdStr === approverId) {
+        throw new AppError(
+          "You cannot reject your own leave request",
+          403,
+          "CANNOT_REJECT_OWN_LEAVE"
+        );
+      }
+
+      const employee =
+        await Employee.findById(
+          request.employeeId
+        ).session(session ?? null);
+
+      const approver =
+        await Employee.findById(
+          approverId
+        ).session(session ?? null);
+
+      if (
+        !employee ||
+        !approver
+      ) {
+        throw new AppError(
+          "Employee or approver not found",
+          404,
+          "EMPLOYEE_OR_APPROVER_NOT_FOUND"
+        );
+      }
+
+      const isHR =
+        approver.role === "HR" ||
+        approver.role === "ADMIN";
+
+      const isManager =
+        employee.managerId &&
+        employee.managerId.toString() ===
+          approverId;
+
+      if (
+        !isHR &&
+        !isManager
+      ) {
+        throw new AppError(
+          "You are not authorized to reject this leave request",
+          403,
+          "NOT_AUTHORIZED_TO_REJECT"
+        );
+      }
+
+      rejected = await updateLeaveRequest(
+        requestId,
+        {
+          status: "REJECTED",
+          rejectedBy:
+            new Types.ObjectId(
+              approverId
+            ),
+          rejectedAt: new Date(),
+          rejectionReason,
+        },
+        session
+      );
+
+      await logAuditEvent({
+        actorId: approverId,
+        action: "LEAVE_REJECTED",
+        entityType: "LEAVE_REQUEST",
+        entityId: requestId,
+        oldValue: { status: "PENDING" },
+        newValue: { status: "REJECTED", rejectedBy: approverId, rejectedAt: new Date(), rejectionReason },
+        metadata: { employeeId: employeeIdStr, rejectionReason },
+        session,
+      });
+    });
+
     const request =
       await findLeaveRequestById(
         requestId
       );
 
-    if (!request) {
-      throw new AppError(
-        "Leave request not found",
-        404,
-        "LEAVE_REQUEST_NOT_FOUND"
-      );
-    }
+    if (request) {
+      const employee =
+        await Employee.findById(
+          (request.employeeId as any)?._id
+            ? (request.employeeId as any)._id
+            : request.employeeId
+        );
 
-    if (
-      request.status !== "PENDING"
-    ) {
-      throw new AppError(
-        "Only pending leave requests can be rejected",
-        400,
-        "INVALID_LEAVE_REQUEST_STATUS"
-      );
-    }
+      const approver =
+        await Employee.findById(
+          approverId
+        );
 
-    const employeeIdStr =
-      (request.employeeId as any)?._id
-        ? (request.employeeId as any)._id.toString()
-        : request.employeeId.toString();
-
-    // Prevent self-rejection
-    if (employeeIdStr === approverId) {
-      throw new AppError(
-        "You cannot reject your own leave request",
-        403,
-        "CANNOT_REJECT_OWN_LEAVE"
-      );
-    }
-
-    const employee =
-      await Employee.findById(
-        employeeIdStr
-      );
-
-    const approver =
-      await Employee.findById(
-        approverId
-      );
-
-    if (
-      !employee ||
-      !approver
-    ) {
-      throw new AppError(
-        "Employee or approver not found",
-        404,
-        "EMPLOYEE_OR_APPROVER_NOT_FOUND"
-      );
-    }
-
-    const isHR =
-      approver.role === "HR" ||
-      approver.role === "ADMIN";
-
-    const isManager =
-      employee.managerId &&
-      employee.managerId.toString() ===
-        approverId;
-
-    if (
-      !isHR &&
-      !isManager
-    ) {
-      throw new AppError(
-        "You are not authorized to reject this leave request",
-        403,
-        "NOT_AUTHORIZED_TO_REJECT"
-      );
-    }
-
-    const rejected = await updateLeaveRequest(
-      requestId,
-      {
-        status: "REJECTED",
-        approvedBy:
-          new Types.ObjectId(
-            approverId
-          ),
-        rejectionReason,
+      if (employee && approver) {
+        await notificationService.notifyLeaveRejected(request, employee, approver, rejectionReason);
       }
-    );
-
-    await logAuditEvent({
-      actorId: approverId,
-      action: "LEAVE_REJECTED",
-      entityType: "LEAVE_REQUEST",
-      entityId: requestId,
-      oldValue: { status: "PENDING" },
-      newValue: { status: "REJECTED", approvedBy: approverId, rejectionReason },
-      metadata: { employeeId: employeeIdStr, rejectionReason },
-    });
-
-    await notificationService.notifyLeaveRejected(rejected, employee, approver, rejectionReason);
+    }
 
     return rejected;
   };
@@ -656,109 +715,134 @@ export const cancelLeaveRequestService =
       );
     }
 
+    let cancelled: any;
+
+    await runInTransaction(async (session) => {
+      const request =
+        await findLeaveRequestByIdForUpdate(
+          requestId,
+          session
+        );
+
+      if (!request) {
+        throw new AppError(
+          "Leave request not found",
+          404,
+          "LEAVE_REQUEST_NOT_FOUND"
+        );
+      }
+
+      const employeeIdStr =
+        request.employeeId.toString();
+
+      const isOwner = employeeIdStr === userId;
+      const isPrivileged = userRole === "HR" || userRole === "ADMIN";
+
+      if (!isOwner && !isPrivileged) {
+        throw new AppError(
+          "You are not authorized to cancel this leave request",
+          403,
+          "NOT_AUTHORIZED_TO_CANCEL"
+        );
+      }
+
+      if (
+        request.status !== "PENDING" &&
+        request.status !== "APPROVED"
+      ) {
+        throw new AppError(
+          `Cannot cancel a leave request with status ${request.status}`,
+          400,
+          "INVALID_LEAVE_REQUEST_STATUS"
+        );
+      }
+
+      const leaveTypeIdStr =
+        request.leaveTypeId.toString();
+
+      const leaveType =
+        await LeaveType.findById(
+          request.leaveTypeId
+        ).session(session ?? null);
+
+      if (!leaveType) {
+        throw new AppError(
+          "Leave type not found",
+          404,
+          "LEAVE_TYPE_NOT_FOUND"
+        );
+      }
+
+      if (!leaveType.rules.allowCancellation) {
+        throw new AppError(
+          "Cancellation is not permitted for this leave type policy",
+          400,
+          "CANCELLATION_NOT_ALLOWED"
+        );
+      }
+
+      // If request was approved, restore the consumed balance
+      if (request.status === "APPROVED") {
+        const balance = await findBalance(
+          employeeIdStr,
+          leaveTypeIdStr,
+          request.fromDate.getFullYear(),
+          session
+        );
+
+        if (balance) {
+          await restoreBalance(
+            balance._id.toString(),
+            request.days,
+            session
+          );
+        }
+      }
+
+      cancelled = await updateLeaveRequest(
+        requestId,
+        {
+          status: "CANCELLED",
+          cancelledAt: new Date(),
+          cancelledBy:
+            new Types.ObjectId(
+              userId
+            ),
+        },
+        session
+      );
+
+      await logAuditEvent({
+        actorId: userId,
+        action: "LEAVE_CANCELLED",
+        entityType: "LEAVE_REQUEST",
+        entityId: requestId,
+        oldValue: { status: request.status },
+        newValue: { status: "CANCELLED", cancelledAt: new Date(), cancelledBy: userId },
+        metadata: {
+          employeeId: employeeIdStr,
+          restoredDays: request.status === "APPROVED" ? request.days : 0,
+        },
+        session,
+      });
+    });
+
     const request =
       await findLeaveRequestById(
         requestId
       );
 
-    if (!request) {
-      throw new AppError(
-        "Leave request not found",
-        404,
-        "LEAVE_REQUEST_NOT_FOUND"
-      );
-    }
-
-    const employeeIdStr =
-      (request.employeeId as any)?._id
-        ? (request.employeeId as any)._id.toString()
-        : request.employeeId.toString();
-
-    const isOwner = employeeIdStr === userId;
-    const isPrivileged = userRole === "HR" || userRole === "ADMIN";
-
-    if (!isOwner && !isPrivileged) {
-      throw new AppError(
-        "You are not authorized to cancel this leave request",
-        403,
-        "NOT_AUTHORIZED_TO_CANCEL"
-      );
-    }
-
-    if (
-      request.status !== "PENDING" &&
-      request.status !== "APPROVED"
-    ) {
-      throw new AppError(
-        `Cannot cancel a leave request with status ${request.status}`,
-        400,
-        "INVALID_LEAVE_REQUEST_STATUS"
-      );
-    }
-
-    const leaveTypeIdStr =
-      (request.leaveTypeId as any)?._id
-        ? (request.leaveTypeId as any)._id.toString()
-        : request.leaveTypeId.toString();
-
-    const leaveType = await LeaveType.findById(leaveTypeIdStr);
-    if (!leaveType) {
-      throw new AppError(
-        "Leave type not found",
-        404,
-        "LEAVE_TYPE_NOT_FOUND"
-      );
-    }
-
-    if (!leaveType.rules.allowCancellation) {
-      throw new AppError(
-        "Cancellation is not permitted for this leave type policy",
-        400,
-        "CANCELLATION_NOT_ALLOWED"
-      );
-    }
-
-    const employee = await Employee.findById(employeeIdStr);
-
-    // If request was approved, restore the consumed balance
-    if (request.status === "APPROVED") {
-      const balance = await findBalance(
-        employeeIdStr,
-        leaveTypeIdStr,
-        request.fromDate.getFullYear()
-      );
-
-      if (balance) {
-        await restoreBalance(
-          balance._id.toString(),
-          request.days
+    if (request) {
+      const employee =
+        await Employee.findById(
+          (request.employeeId as any)?._id
+            ? (request.employeeId as any)._id
+            : request.employeeId
         );
+
+      if (employee) {
+        await notificationService.notifyLeaveCancelled(request, employee, { _id: userId });
       }
-    }
-
-    const cancelled = await updateLeaveRequest(
-      requestId,
-      {
-        status: "CANCELLED",
-        cancelledAt: new Date(),
-      }
-    );
-
-    await logAuditEvent({
-      actorId: userId,
-      action: "LEAVE_CANCELLED",
-      entityType: "LEAVE_REQUEST",
-      entityId: requestId,
-      oldValue: { status: request.status },
-      newValue: { status: "CANCELLED", cancelledAt: new Date() },
-      metadata: {
-        employeeId: employeeIdStr,
-        restoredDays: request.status === "APPROVED" ? request.days : 0,
-      },
-    });
-
-    if (employee) {
-      await notificationService.notifyLeaveCancelled(cancelled, employee, { _id: userId });
     }
 
     return cancelled;

@@ -4,7 +4,30 @@ import {
   exportAttendanceReportCsv,
   getLeaveReportService,
   exportLeaveReportCsv,
+  getDashboardSummaryService,
 } from "../services/report.service";
+
+export const getDashboardSummary = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const auth = req.user
+      ? { userId: req.user.userId, role: req.user.role }
+      : undefined;
+
+    const data = await getDashboardSummaryService(auth);
+
+    return res.status(200).json({
+      success: true,
+      message: "Dashboard summary fetched successfully",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getAttendanceReport = async (
   req: Request,

@@ -132,6 +132,21 @@ export const getLeaveRequest =
         );
       }
 
+      if (
+        req.user?.role === "MANAGER" &&
+        req.user?.userId !== employeeIdStr
+      ) {
+        const requesterManagerId = (request.employeeId as any)?.managerId?.toString();
+
+        if (requesterManagerId !== req.user.userId) {
+          throw new AppError(
+            "You can only view leave requests of your team members",
+            403,
+            "FORBIDDEN"
+          );
+        }
+      }
+
       return res.status(200).json({
         success: true,
         message: "Leave request fetched successfully",

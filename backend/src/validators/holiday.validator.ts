@@ -1,10 +1,13 @@
 import { z } from "zod";
 
+const dateSchema = z
+  .string()
+  .datetime()
+  .or(z.string().date());
+
 export const createHolidaySchema =
   z.object({
-    date: z
-      .string()
-      .datetime(),
+    date: dateSchema,
 
     name: z
       .string()
@@ -25,10 +28,7 @@ export const createHolidaySchema =
 
 export const updateHolidaySchema =
   z.object({
-    date: z
-      .string()
-      .datetime()
-      .optional(),
+    date: dateSchema.optional(),
 
     name: z
       .string()

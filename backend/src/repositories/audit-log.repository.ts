@@ -1,8 +1,14 @@
+import { ClientSession } from "mongoose";
 import { AuditLog, IAuditLog } from "../models/audit-log.model";
 
 export const createAuditLog = async (
-  data: Partial<IAuditLog>
+  data: Partial<IAuditLog>,
+  session?: ClientSession
 ): Promise<IAuditLog> => {
+  if (session) {
+    const [log] = await AuditLog.create([data], { session });
+    return log;
+  }
   return AuditLog.create(data);
 };
 

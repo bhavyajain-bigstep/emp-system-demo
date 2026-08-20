@@ -290,3 +290,73 @@ export const exportLeaveReportCsv = async (
 
   return stringify(rows, { header: true });
 };
+
+export const getDashboardSummaryService = async (
+  auth?: AuthContext
+) => {
+  const empFilter = await buildAuthorizedEmployeeFilter(undefined, undefined, auth);
+
+  let targetEmployeeIds: Types.ObjectId[] | null = null;
+  if (Object.keys(empFilter).length > 0) {
+    const matchedEmployees = await Employee.find(empFilter).select("_id");
+    targetEmployeeIds = matchedEmployees.map((e) => e._id as Types.ObjectId);
+  }
+
+  const employeeQuery: Record<string, any> = {};
+  const leaveQuery: Record<string, any> = {};
+  const attendanceQuery: Record<string, any> = {};
+
+  if (targetEmployeeIds !== null) {
+    employeeQuery._id = { $in: targetEmployeeIds };
+    leaveQuery.employeeId = { $in: targetEmployeeIds };
+    attendanceQuery.employeeId = { $in: targetEmployeeIds };
+  }
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+  const [totalEmployees, activeEmployees, pendingLeaves, approvedThisMonth, attendanceToday] =
+    await Promise.all([
+      Employee.countDocuments(employeeQuery),
+      Employee.countDocuments({ ...employeeQuery, status: "ACTIVE" }),
+      LeaveRequest.countDocuments({ ...leaveQuery, status: "PENDING" }),
+      LeaveRequest.countDocuments({
+        ...leaveQuery,
+        status: "APPROVED",
+        approvedAt: { $gte: startOfMonth },
+      }),
+      Attendance.find({ ...attendanceQuery, date: { $gte: startOfDay, $lt: endOfDay } }).select(
+        "employeeId status"
+      ),
+    ]);
+
+  const attendanceBreakdown = {
+    present: attendanceToday.filter((a) => a.status === "PRESENT").length,
+    late: attendanceToday.filter((a) => a.status === "LATE").length,
+    absent: attendanceToday.filter((a) => a.status === "ABSENT").length,
+    halfDay: attendanceToday.filter((a) => a.status === "HALF_DAY").length,
+    total: attendanceToday.length,
+  };
+
+  const leavesByType = await LeaveRequest.aggregate([
+    { $match: leaveQuery },
+    { $group: { _id: "$leaveTypeId", count: { $sum: 1 } } },
+  ]);
+
+  return {
+    asOf: now,
+    employees: {
+      total: totalEmployees,
+      active: activeEmployees,
+      inactive: totalEmployees - activeEmployees,
+    },
+    leaves: {
+      pending: pendingLeaves,
+      approvedThisMonth,
+    },
+    attendance: attendanceBreakdown,
+    leavesByType,
+  };
+};

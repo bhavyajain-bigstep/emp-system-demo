@@ -1,22 +1,15 @@
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
+import { env } from "../config/env";
 import { JwtPayload } from "../types/auth.types";
-
-const getJwtSecret = (): string => {
-  const secret = process.env.JWT_SECRET;
-
-  if (!secret) {
-    throw new Error("JWT_SECRET is not defined");
-  }
-
-  return secret;
-};
 
 export const generateAccessToken = (
   payload: JwtPayload
 ): string => {
-  return jwt.sign(payload, getJwtSecret(), {
-    expiresIn: "1d",
-  });
+  const options: SignOptions = {
+    expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"],
+  };
+
+  return jwt.sign(payload, env.JWT_SECRET, options);
 };
 
 export const verifyAccessToken = (
@@ -24,6 +17,6 @@ export const verifyAccessToken = (
 ): JwtPayload => {
   return jwt.verify(
     token,
-    getJwtSecret()
+    env.JWT_SECRET
   ) as JwtPayload;
 };

@@ -1,4 +1,4 @@
-import { hash } from "bcrypt-ts";
+import { hash } from "bcrypt";
 import { Employee } from "../models/employee.model";
 import { Department } from "../models/department.model";
 

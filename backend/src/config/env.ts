@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Load .env from the project root
-dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env"), quiet: true });
 
 /**
  * Reads a required environment variable.
@@ -31,6 +31,7 @@ export const env = {
   MONGO_URI: optionalEnv("MONGO_URI", "mongodb://127.0.0.1:27017/leave_attendance_db"),
 
   JWT_SECRET: optionalEnv("JWT_SECRET", "dev_secret_change_me"),
+  JWT_EXPIRES_IN: optionalEnv("JWT_EXPIRES_IN", "1d"),
 
   // Attendance policy — placeholder defaults, finalize with actual HR policy.
   ATTENDANCE_LATE_CUTOFF_MINUTES: parseInt(

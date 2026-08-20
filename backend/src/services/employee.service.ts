@@ -1,6 +1,6 @@
 import {
   hash
-} from "bcrypt-ts";
+} from "bcrypt";
 import { Types } from "mongoose";
 
 import {
@@ -11,6 +11,7 @@ import {
   findEmployees,
   updateEmployee,
 } from "../repositories/employee.repository";
+import { findDepartmentById } from "../repositories/department.repository";
 
 import { AppError } from "../errors/app-error";
 import { logAuditEvent } from "./audit-log.service";
@@ -67,6 +68,35 @@ export const createEmployeeService = async (
     );
   }
 
+  /*
+   * Validate department exists.
+   */
+  if (data.departmentId === undefined) {
+    throw new AppError(
+      "Department ID is required",
+      400,
+      "DEPARTMENT_REQUIRED"
+    );
+  }
+
+  if (!Types.ObjectId.isValid(data.departmentId)) {
+    throw new AppError(
+      "Invalid department ID",
+      400,
+      "INVALID_DEPARTMENT_ID"
+    );
+  }
+
+  const department = await findDepartmentById(data.departmentId);
+
+  if (!department) {
+    throw new AppError(
+      "Department not found",
+      404,
+      "DEPARTMENT_NOT_FOUND"
+    );
+  }
+
   const passwordHash =
     await hash(
       data.password,
@@ -83,6 +113,7 @@ export const createEmployeeService = async (
       data.joiningDate
     ),
     timezone: data.timezone,
+    departmentId: department._id,
   };
 
   /*
@@ -102,32 +133,31 @@ export const createEmployeeService = async (
       );
     }
 
-    employeeData.managerId =
-      new Types.ObjectId(
-        data.managerId
-      );
-  }
+    const manager = await findEmployeeById(data.managerId);
 
-  /*
-   * Convert departmentId string
-   * to MongoDB ObjectId.
-   */
-  if (data.departmentId !== undefined) {
-    if (
-      !Types.ObjectId.isValid(
-        data.departmentId
-      )
-    ) {
+    if (!manager) {
       throw new AppError(
-        "Invalid department ID",
-        400,
-        "INVALID_DEPARTMENT_ID"
+        "Manager not found",
+        404,
+        "MANAGER_NOT_FOUND"
       );
     }
 
-    employeeData.departmentId =
+    if (
+      manager.role !== "MANAGER" &&
+      manager.role !== "HR" &&
+      manager.role !== "ADMIN"
+    ) {
+      throw new AppError(
+        "Manager must be a MANAGER, HR or ADMIN",
+        400,
+        "INVALID_MANAGER_ROLE"
+      );
+    }
+
+    employeeData.managerId =
       new Types.ObjectId(
-        data.departmentId
+        data.managerId
       );
   }
 
@@ -149,7 +179,11 @@ export const createEmployeeService = async (
     },
   });
 
-  return employee;
+  // Re-fetch so the response is consistent with other endpoints
+  // (excludes the hidden passwordHash field and populates refs).
+  const created = await findEmployeeById(employee._id.toString());
+
+  return created ?? employee;
 };
 
 export const getEmployeeService = async (
@@ -324,6 +358,36 @@ export const updateEmployeeService = async (
       );
     }
 
+    if (data.managerId === id) {
+      throw new AppError(
+        "An employee cannot be their own manager",
+        400,
+        "SELF_MANAGER"
+      );
+    }
+
+    const manager = await findEmployeeById(data.managerId);
+
+    if (!manager) {
+      throw new AppError(
+        "Manager not found",
+        404,
+        "MANAGER_NOT_FOUND"
+      );
+    }
+
+    if (
+      manager.role !== "MANAGER" &&
+      manager.role !== "HR" &&
+      manager.role !== "ADMIN"
+    ) {
+      throw new AppError(
+        "Manager must be a MANAGER, HR or ADMIN",
+        400,
+        "INVALID_MANAGER_ROLE"
+      );
+    }
+
     updateData.managerId =
       new Types.ObjectId(
         data.managerId
@@ -345,6 +409,16 @@ export const updateEmployeeService = async (
         "Invalid department ID",
         400,
         "INVALID_DEPARTMENT_ID"
+      );
+    }
+
+    const department = await findDepartmentById(data.departmentId);
+
+    if (!department) {
+      throw new AppError(
+        "Department not found",
+        404,
+        "DEPARTMENT_NOT_FOUND"
       );
     }
 

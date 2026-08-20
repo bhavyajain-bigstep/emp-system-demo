@@ -1,8 +1,9 @@
 import "dotenv/config";
 import app from "./app";
 import { connectDB } from "./config/db";
+import { env } from "./config/env";
 
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT;
 
 async function startServer() {
   // Connect to MongoDB first — don't accept traffic until the DB is up

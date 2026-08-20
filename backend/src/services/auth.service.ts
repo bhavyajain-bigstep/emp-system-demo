@@ -1,4 +1,4 @@
-import bcrypt, { compare } from 'bcrypt-ts';
+import { compare } from "bcrypt";
 
 import { findEmployeeByEmail } from "../repositories/employee.repository";
 import { AppError } from "../errors/app-error";

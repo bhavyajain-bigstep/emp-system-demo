@@ -86,10 +86,15 @@ export const getEmployee = async (
 
     if (
       req.user?.role === "MANAGER" &&
-      req.user.userId !== targetId &&
-      employee.managerId?.toString() !== req.user.userId
+      req.user.userId !== targetId
     ) {
-      throw new AppError("You can only view members of your team", 403, "FORBIDDEN");
+      const managerId = (employee.managerId as any)?._id
+        ? (employee.managerId as any)._id.toString()
+        : employee.managerId?.toString();
+
+      if (managerId !== req.user.userId) {
+        throw new AppError("You can only view members of your team", 403, "FORBIDDEN");
+      }
     }
 
     return res.status(200).json({

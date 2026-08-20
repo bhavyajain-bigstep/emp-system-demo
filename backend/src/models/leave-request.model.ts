@@ -28,9 +28,13 @@ export interface ILeaveRequest
   approvedBy?: Types.ObjectId;
   approvedAt?: Date;
 
+  rejectedBy?: Types.ObjectId;
+  rejectedAt?: Date;
+
   rejectionReason?: string;
 
   cancelledAt?: Date;
+  cancelledBy?: Types.ObjectId;
 
   createdAt: Date;
   updatedAt: Date;
@@ -99,6 +103,15 @@ const leaveRequestSchema =
         type: Date,
       },
 
+      rejectedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "Employee",
+      },
+
+      rejectedAt: {
+        type: Date,
+      },
+
       rejectionReason: {
         type: String,
         trim: true,
@@ -107,6 +120,11 @@ const leaveRequestSchema =
 
       cancelledAt: {
         type: Date,
+      },
+
+      cancelledBy: {
+        type: Schema.Types.ObjectId,
+        ref: "Employee",
       },
     },
     {

@@ -143,7 +143,7 @@ router.get("/:id", getEmployee);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [employeeCode, name, email, password, joiningDate, timezone]
+ *             required: [employeeCode, name, email, password, departmentId, joiningDate, timezone]
  *             properties:
  *               employeeCode: { type: string, example: EMP-1042 }
  *               name: { type: string, example: Jayant Kaushik }

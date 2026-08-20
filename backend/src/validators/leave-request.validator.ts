@@ -1,18 +1,19 @@
 import { z } from "zod";
 
+const dateSchema = z
+  .string()
+  .datetime()
+  .or(z.string().date());
+
 export const createLeaveRequestSchema =
   z.object({
     leaveTypeId: z
       .string()
       .min(1),
 
-    fromDate: z
-      .string()
-      .datetime(),
+    fromDate: dateSchema,
 
-    toDate: z
-      .string()
-      .datetime(),
+    toDate: dateSchema,
 
     reason: z
       .string()

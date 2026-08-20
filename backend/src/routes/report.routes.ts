@@ -4,6 +4,7 @@ import {
   exportAttendanceReport,
   getLeaveReport,
   exportLeaveReport,
+  getDashboardSummary,
 } from "../controllers/report.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 import { authorize } from "../middlewares/role.middleware";
@@ -164,5 +165,19 @@ router.get("/leaves", getLeaveReport);
  *               type: string
  */
 router.get("/leaves/export", exportLeaveReport);
+
+/**
+ * @swagger
+ * /reports/dashboard:
+ *   get:
+ *     summary: Get dashboard summary (HR/Admin/Manager)
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard summary fetched successfully
+ */
+router.get("/dashboard", getDashboardSummary);
 
 export default router;
