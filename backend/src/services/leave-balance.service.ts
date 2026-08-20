@@ -16,7 +16,8 @@ import {
 import {
   findLeaveTypeById,
 } from "../repositories/leave-type.repository";
-import { logAuditEvent } from "./audit-log.service";
+import { logAuditEvent, AuditEventType } from "./audit-log.service";
+import { toPlainObject } from "../utils/logger";
 
 interface CreateBalanceInput {
   employeeId: string;
@@ -126,11 +127,11 @@ export const createLeaveBalanceService =
     });
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_BALANCE_CREATED,
       actorId: data.actorId,
-      action: "LEAVE_BALANCE_CREATED",
       entityType: "LEAVE_BALANCE",
       entityId: newBalance._id.toString(),
-      newValue: newBalance,
+      newValue: toPlainObject(newBalance),
       metadata: {
         employeeId: data.employeeId,
         leaveTypeId: data.leaveTypeId,
@@ -260,8 +261,8 @@ export const updateLeaveBalanceService =
     );
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_BALANCE_UPDATED,
       actorId,
-      action: "LEAVE_BALANCE_UPDATED",
       entityType: "LEAVE_BALANCE",
       entityId: id,
       oldValue: { allocated: balance.allocated, available: balance.available },

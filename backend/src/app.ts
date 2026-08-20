@@ -10,9 +10,11 @@ import employeeRoutes from "./routes/employee.routes";
 import departmentRoutes from "./routes/department.routes";
 import leaveTypeRoutes from "./routes/leave-type.routes";
 import { errorHandler } from "./middlewares/error.middleware";
+import { correlationMiddleware } from "./middlewares/correlation.middleware";
 import leaveRequestRoutes from "./routes/leave-request.routes";
 import holidayRoutes from "./routes/holiday.routes";
 import reportRoutes from "./routes/report.routes";
+import auditLogRoutes from "./routes/audit-log.routes";
 import rateLimit from "express-rate-limit";
 
 const app = express();
@@ -20,6 +22,14 @@ const app = express();
 app.use(express.json());
 app.use(helmet());
 app.use(cors());
+app.use(correlationMiddleware as express.RequestHandler);
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Employee Leave Management API is running",
+  });
+});
 
 // Apply rate limiting on auth endpoints (disabled in test env)
 if (process.env.NODE_ENV !== "test") {
@@ -37,12 +47,7 @@ if (process.env.NODE_ENV !== "test") {
   app.use("/api/v1/auth", authLimiter);
 }
 
-app.get("/health", (_req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Employee Leave Management API is running",
-  });
-});
+app.use("/api/v1/audit-logs", auditLogRoutes);
 
 app.use(
   "/api/v1/leaves",

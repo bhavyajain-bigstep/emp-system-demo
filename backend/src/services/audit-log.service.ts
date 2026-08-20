@@ -1,14 +1,55 @@
 import { Types } from "mongoose";
 import { createAuditLog, findAuditLogs } from "../repositories/audit-log.repository";
+import { logger, AuditLogEntry } from "../utils/logger";
+
+export enum AuditEventType {
+  EMPLOYEE_CREATED = "EMPLOYEE_CREATED",
+  EMPLOYEE_UPDATED = "EMPLOYEE_UPDATED",
+  EMPLOYEE_STATUS_CHANGED = "EMPLOYEE_STATUS_CHANGED",
+  EMPLOYEE_DELETED = "EMPLOYEE_DELETED",
+
+  DEPARTMENT_CREATED = "DEPARTMENT_CREATED",
+  DEPARTMENT_UPDATED = "DEPARTMENT_UPDATED",
+  DEPARTMENT_ARCHIVED = "DEPARTMENT_ARCHIVED",
+
+  LEAVE_TYPE_CREATED = "LEAVE_TYPE_CREATED",
+  LEAVE_TYPE_UPDATED = "LEAVE_TYPE_UPDATED",
+  LEAVE_TYPE_DELETED = "LEAVE_TYPE_DELETED",
+
+  LEAVE_BALANCE_CREATED = "LEAVE_BALANCE_CREATED",
+  LEAVE_BALANCE_UPDATED = "LEAVE_BALANCE_UPDATED",
+  LEAVE_BALANCE_DEDUCTED = "LEAVE_BALANCE_DEDUCTED",
+  LEAVE_BALANCE_RESTORED = "LEAVE_BALANCE_RESTORED",
+
+  LEAVE_REQUEST_CREATED = "LEAVE_REQUEST_CREATED",
+  LEAVE_REQUEST_APPROVED = "LEAVE_REQUEST_APPROVED",
+  LEAVE_REQUEST_REJECTED = "LEAVE_REQUEST_REJECTED",
+  LEAVE_REQUEST_CANCELLED = "LEAVE_REQUEST_CANCELLED",
+
+  ATTENDANCE_CHECK_IN = "ATTENDANCE_CHECK_IN",
+  ATTENDANCE_CHECK_OUT = "ATTENDANCE_CHECK_OUT",
+  ATTENDANCE_RECORD_UPDATED = "ATTENDANCE_RECORD_UPDATED",
+
+  HOLIDAY_CREATED = "HOLIDAY_CREATED",
+  HOLIDAY_UPDATED = "HOLIDAY_UPDATED",
+  HOLIDAY_DELETED = "HOLIDAY_DELETED",
+
+  AUTH_LOGIN_SUCCESS = "AUTH_LOGIN_SUCCESS",
+  AUTH_LOGIN_FAILED = "AUTH_LOGIN_FAILED",
+  AUTH_TOKEN_REFRESHED = "AUTH_TOKEN_REFRESHED",
+  AUTH_UNAUTHORIZED_ACCESS = "AUTH_UNAUTHORIZED_ACCESS",
+}
 
 interface LogActionInput {
+  eventType: AuditEventType;
   actorId?: string | Types.ObjectId;
-  action: string;
+  actorRole?: string;
   entityType: string;
   entityId?: string | Types.ObjectId;
-  oldValue?: any;
-  newValue?: any;
-  metadata?: Record<string, any>;
+  oldValue?: Record<string, unknown>;
+  newValue?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  correlationId?: string;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -21,15 +62,17 @@ const SENSITIVE_KEYS = new Set([
   "refreshToken",
   "secret",
   "JWT_SECRET",
+  "authorization",
+  "cookie",
 ]);
 
-function sanitize(obj: any): any {
+function sanitize(obj: unknown): unknown {
   if (!obj || typeof obj !== "object") return obj;
   if (obj instanceof Date || obj instanceof Types.ObjectId) return obj;
   if (Array.isArray(obj)) return obj.map(sanitize);
 
-  const clean: Record<string, any> = {};
-  const raw = typeof obj.toObject === "function" ? obj.toObject() : obj;
+  const clean: Record<string, unknown> = {};
+  const raw = typeof (obj as any).toObject === "function" ? (obj as any).toObject() : obj;
 
   for (const [key, value] of Object.entries(raw)) {
     if (SENSITIVE_KEYS.has(key)) {
@@ -41,6 +84,8 @@ function sanitize(obj: any): any {
 }
 
 export const logAuditEvent = async (input: LogActionInput) => {
+  const correlationId = input.correlationId || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
   try {
     const actorId = input.actorId
       ? typeof input.actorId === "string" && Types.ObjectId.isValid(input.actorId)
@@ -58,20 +103,41 @@ export const logAuditEvent = async (input: LogActionInput) => {
         : undefined
       : undefined;
 
-    return await createAuditLog({
+    const auditEntry = await createAuditLog({
       actorId,
-      action: input.action,
+      action: input.eventType,
       entityType: input.entityType,
       entityId,
-      oldValue: input.oldValue ? sanitize(input.oldValue) : undefined,
-      newValue: input.newValue ? sanitize(input.newValue) : undefined,
-      metadata: input.metadata ? sanitize(input.metadata) : undefined,
+      oldValue: input.oldValue ? (sanitize(input.oldValue) as Record<string, unknown>) : undefined,
+      newValue: input.newValue ? (sanitize(input.newValue) as Record<string, unknown>) : undefined,
+      metadata: input.metadata ? (sanitize(input.metadata) as Record<string, unknown>) : undefined,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
     });
+
+    const logEntry: AuditLogEntry = {
+      eventType: input.eventType,
+      actorId: actorId?.toString(),
+      actorRole: input.actorRole,
+      entityType: input.entityType,
+      entityId: entityId?.toString() ?? "",
+      action: input.eventType,
+      oldValue: input.oldValue ? (sanitize(input.oldValue) as Record<string, unknown>) : undefined,
+      newValue: input.newValue ? (sanitize(input.newValue) as Record<string, unknown>) : undefined,
+      metadata: input.metadata ? (sanitize(input.metadata) as Record<string, unknown>) : undefined,
+      correlationId,
+      timestamp: new Date(),
+    };
+
+    logger.audit(logEntry);
+
+    return auditEntry;
   } catch (error) {
-    // Non-blocking error for audit logging failure
-    console.error("Audit log error:", error);
+    logger.error("Audit log persistence failed", {
+      eventType: input.eventType,
+      correlationId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return null;
   }
 };

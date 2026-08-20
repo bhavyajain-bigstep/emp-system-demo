@@ -13,7 +13,8 @@ import {
 } from "../repositories/employee.repository";
 
 import { AppError } from "../errors/app-error";
-import { logAuditEvent } from "./audit-log.service";
+import { logAuditEvent, AuditEventType } from "./audit-log.service";
+import { toPlainObject } from "../utils/logger";
 
 interface CreateEmployeeInput {
   employeeCode: string;
@@ -137,11 +138,11 @@ export const createEmployeeService = async (
     );
 
   await logAuditEvent({
+    eventType: AuditEventType.EMPLOYEE_CREATED,
     actorId: data.actorId,
-    action: "EMPLOYEE_CREATED",
     entityType: "EMPLOYEE",
     entityId: employee._id.toString(),
-    newValue: employee,
+    newValue: toPlainObject(employee),
     metadata: {
       employeeCode: employee.employeeCode,
       email: employee.email,
@@ -360,18 +361,18 @@ export const updateEmployeeService = async (
     updateData
   );
 
-  const action =
+  const eventType =
     data.status && data.status !== employee.status
-      ? "EMPLOYEE_STATUS_CHANGED"
-      : "EMPLOYEE_UPDATED";
+      ? AuditEventType.EMPLOYEE_STATUS_CHANGED
+      : AuditEventType.EMPLOYEE_UPDATED;
 
   await logAuditEvent({
+    eventType,
     actorId,
-    action,
     entityType: "EMPLOYEE",
     entityId: id,
-    oldValue: employee,
-    newValue: updated,
+    oldValue: toPlainObject(employee),
+    newValue: toPlainObject(updated),
   });
 
   return updated;

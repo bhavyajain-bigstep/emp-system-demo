@@ -10,7 +10,8 @@ import {
   findHolidayById,
   updateHoliday,
 } from "../repositories/holiday.repository";
-import { logAuditEvent } from "./audit-log.service";
+import { logAuditEvent, AuditEventType } from "./audit-log.service";
+import { toPlainObject } from "../utils/logger";
 
 interface CreateHolidayInput {
   date: Date;
@@ -77,11 +78,11 @@ export const createHolidayService =
     });
 
     await logAuditEvent({
+      eventType: AuditEventType.HOLIDAY_CREATED,
       actorId: data.createdBy,
-      action: "HOLIDAY_CREATED",
       entityType: "HOLIDAY",
       entityId: newHoliday._id.toString(),
-      newValue: newHoliday,
+      newValue: toPlainObject(newHoliday),
       metadata: { name: data.name, date, optional: data.optional },
     });
 
@@ -247,12 +248,12 @@ export const updateHolidayService =
     );
 
     await logAuditEvent({
+      eventType: AuditEventType.HOLIDAY_UPDATED,
       actorId,
-      action: "HOLIDAY_UPDATED",
       entityType: "HOLIDAY",
       entityId: id,
-      oldValue: holiday,
-      newValue: updated,
+      oldValue: toPlainObject(holiday),
+      newValue: toPlainObject(updated),
     });
 
     return updated;
@@ -287,11 +288,11 @@ export const deleteHolidayService =
     const deleted = await deleteHoliday(id);
 
     await logAuditEvent({
+      eventType: AuditEventType.HOLIDAY_DELETED,
       actorId,
-      action: "HOLIDAY_DELETED",
       entityType: "HOLIDAY",
       entityId: id,
-      oldValue: holiday,
+      oldValue: toPlainObject(holiday),
     });
 
     return deleted;

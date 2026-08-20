@@ -5,16 +5,25 @@ import {
 } from "express";
 
 import { AppError } from "../errors/app-error";
+import { logger } from "../utils/logger";
 
 export const errorHandler = (
   err: any,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) => {
+  const correlationId = (req as any).correlationId;
+
   // Don't clutter logs in test environment unless needed
   if (process.env.NODE_ENV !== "test") {
-    console.error("Error:", err);
+    logger.error("Unhandled error", {
+      correlationId,
+      error: err instanceof Error ? err.message : "Unknown error",
+      stack: err instanceof Error ? err.stack : undefined,
+      path: req.path,
+      method: req.method,
+    });
   }
 
   if (err instanceof AppError) {

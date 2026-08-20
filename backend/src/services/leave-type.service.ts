@@ -12,7 +12,8 @@ import {
   findLeaveTypes,
   updateLeaveType,
 } from "../repositories/leave-type.repository";
-import { logAuditEvent } from "./audit-log.service";
+import { logAuditEvent, AuditEventType } from "./audit-log.service";
+import { toPlainObject } from "../utils/logger";
 
 interface LeaveRulesInput {
   allowNegativeBalance: boolean;
@@ -82,11 +83,11 @@ export const createLeaveTypeService =
     });
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_TYPE_CREATED,
       actorId,
-      action: "LEAVE_POLICY_UPDATED",
       entityType: "LEAVE_TYPE",
       entityId: newLeaveType._id.toString(),
-      newValue: newLeaveType,
+      newValue: toPlainObject(newLeaveType),
       metadata: { code: newLeaveType.code, annualQuota: newLeaveType.annualQuota },
     });
 
@@ -223,12 +224,12 @@ export const updateLeaveTypeService =
     );
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_TYPE_UPDATED,
       actorId,
-      action: "LEAVE_POLICY_UPDATED",
       entityType: "LEAVE_TYPE",
       entityId: id,
-      oldValue: existing,
-      newValue: updated,
+      oldValue: toPlainObject(existing),
+      newValue: toPlainObject(updated),
     });
 
     return updated;
@@ -276,12 +277,12 @@ export const deleteLeaveTypeService =
     );
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_TYPE_DELETED,
       actorId,
-      action: "LEAVE_POLICY_UPDATED",
       entityType: "LEAVE_TYPE",
       entityId: id,
-      oldValue: leaveType,
-      newValue: deactivated,
+      oldValue: toPlainObject(leaveType),
+      newValue: toPlainObject(deactivated),
       metadata: { action: "DEACTIVATED" },
     });
 

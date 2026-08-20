@@ -23,7 +23,8 @@ import {
 } from "../repositories/leave-balance.repository";
 
 import { calculateLeaveDays } from "./leave-day.service";
-import { logAuditEvent } from "./audit-log.service";
+import { logAuditEvent, AuditEventType } from "./audit-log.service";
+import { toPlainObject } from "../utils/logger";
 import { notificationService } from "./notification.service";
 
 interface CreateLeaveRequestInput {
@@ -246,11 +247,11 @@ export const createLeaveRequestService =
     });
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_REQUEST_CREATED,
       actorId: data.employeeId,
-      action: "LEAVE_CREATED",
       entityType: "LEAVE_REQUEST",
       entityId: createdRequest._id.toString(),
-      newValue: createdRequest,
+      newValue: toPlainObject(createdRequest),
       metadata: {
         days,
         fromDate: data.fromDate,
@@ -495,8 +496,8 @@ export const approveLeaveRequestService =
     }
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_REQUEST_APPROVED,
       actorId: approverId,
-      action: "LEAVE_APPROVED",
       entityType: "LEAVE_REQUEST",
       entityId: requestId,
       oldValue: { status: "PENDING" },
@@ -630,8 +631,8 @@ export const rejectLeaveRequestService =
     );
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_REQUEST_REJECTED,
       actorId: approverId,
-      action: "LEAVE_REJECTED",
       entityType: "LEAVE_REQUEST",
       entityId: requestId,
       oldValue: { status: "PENDING" },
@@ -768,8 +769,8 @@ export const cancelLeaveRequestService =
     }
 
     await logAuditEvent({
+      eventType: AuditEventType.LEAVE_REQUEST_CANCELLED,
       actorId: userId,
-      action: "LEAVE_CANCELLED",
       entityType: "LEAVE_REQUEST",
       entityId: requestId,
       oldValue: { status: request.status },
