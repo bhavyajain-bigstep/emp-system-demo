@@ -10,7 +10,7 @@ import {
   getEmployeesService,
   updateEmployeeService,
 } from "../services/employee.service";
-import { AppError } from "../errors/app-error";
+import { assertCanReadEmployeeRecord } from "../services/authorization.service";
 import { getPagination } from "../utils/pagination.util";
 
 export const createEmployee = async (
@@ -78,19 +78,9 @@ export const getEmployee = async (
 ) => {
   try {
     const targetId = req.params.id as string;
+    await assertCanReadEmployeeRecord(req.user, targetId);
+
     const employee = await getEmployeeService(targetId);
-
-    if (req.user?.role === "EMPLOYEE" && req.user.userId !== targetId) {
-      throw new AppError("You do not have permission to view this employee", 403, "FORBIDDEN");
-    }
-
-    if (
-      req.user?.role === "MANAGER" &&
-      req.user.userId !== targetId &&
-      employee.managerId?.toString() !== req.user.userId
-    ) {
-      throw new AppError("You can only view members of your team", 403, "FORBIDDEN");
-    }
 
     return res.status(200).json({
       success: true,

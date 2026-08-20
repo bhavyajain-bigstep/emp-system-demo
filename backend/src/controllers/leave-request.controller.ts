@@ -14,7 +14,11 @@ import {
 } from "../services/leave-request.service";
 import { findLeaveRequestById } from "../repositories/leave-request.repository";
 import { AppError } from "../errors/app-error";
-import { assertCanAccessEmployee } from "../services/authorization.service";
+import {
+  assertCanReadEmployeeRecord,
+  findDirectReportIds,
+  requireAuthUser,
+} from "../services/authorization.service";
 
 export const createLeaveRequest =
   async (
@@ -125,7 +129,7 @@ export const getLeaveRequest =
       if (!req.user) {
         throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
       }
-      await assertCanAccessEmployee(req.user.userId, req.user.role, employeeIdStr);
+      await assertCanReadEmployeeRecord(req.user, employeeIdStr);
 
       return res.status(200).json({
         success: true,
@@ -144,24 +148,21 @@ export const getPendingLeaveRequests =
     next: NextFunction
   ) => {
     try {
-      const requests =
-        await getPendingLeaveRequestsService();
+      const user = requireAuthUser(req.user);
 
-      // If manager, filter to only their team members
-      let filteredRequests = requests;
-      if (req.user?.role === "MANAGER") {
-        const managerId = req.user.userId;
-        filteredRequests = requests.filter((r) => {
-          const emp = r.employeeId as any;
-          return emp?.managerId?.toString() === managerId;
-        });
-      }
+      const scopedEmployeeIds =
+        user.role === "MANAGER"
+          ? await findDirectReportIds(user.userId)
+          : undefined;
+
+      const requests =
+        await getPendingLeaveRequestsService(scopedEmployeeIds);
 
       return res.status(200).json({
         success: true,
         message:
           "Pending leave requests fetched successfully",
-        data: filteredRequests,
+        data: requests,
       });
     } catch (error) {
       next(error);

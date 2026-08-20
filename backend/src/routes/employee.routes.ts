@@ -86,7 +86,7 @@ router.get("/", authorize("HR", "ADMIN"), getEmployees);
  * /employees/{id}:
  *   get:
  *     summary: Get a single employee
- *     description: Requires HR or ADMIN role.
+ *     description: HR or ADMIN can view any employee. Managers can view their direct reports. Employees can view their own record.
  *     tags: [Employees]
  *     security:
  *       - bearerAuth: []

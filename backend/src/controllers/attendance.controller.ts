@@ -7,8 +7,11 @@ import {
   getMonthlyAttendanceSummaryService,
 } from "../services/attendance.service";
 import { AppError } from "../errors/app-error";
-import { Employee } from "../models/employee.model";
-import { assertCanAccessEmployee } from "../services/authorization.service";
+import {
+  assertCanReadEmployeeRecord,
+  assertCanWriteEmployeeAttendance,
+  findDirectReportIds,
+} from "../services/authorization.service";
 import { getPagination } from "../utils/pagination.util";
 
 export const checkIn = async (
@@ -23,13 +26,7 @@ export const checkIn = async (
       throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
     }
 
-    if (req.user?.userId !== targetEmployeeId && req.user?.role !== "HR" && req.user?.role !== "ADMIN") {
-      throw new AppError(
-        "You cannot check in for another employee",
-        403,
-        "FORBIDDEN"
-      );
-    }
+    await assertCanWriteEmployeeAttendance(req.user, targetEmployeeId);
 
     const attendance = await checkInService(targetEmployeeId);
 
@@ -55,13 +52,7 @@ export const checkOut = async (
       throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
     }
 
-    if (req.user?.userId !== targetEmployeeId && req.user?.role !== "HR" && req.user?.role !== "ADMIN") {
-      throw new AppError(
-        "You cannot check out for another employee",
-        403,
-        "FORBIDDEN"
-      );
-    }
+    await assertCanWriteEmployeeAttendance(req.user, targetEmployeeId);
 
     const attendance = await checkOutService(targetEmployeeId);
 
@@ -91,12 +82,13 @@ export const getAttendanceList = async (
     if (req.user?.role === "EMPLOYEE") {
       employeeId = req.user.userId;
     } else if (req.user?.role === "MANAGER" && employeeId) {
-      await assertCanAccessEmployee(req.user.userId, req.user.role, employeeId);
+      await assertCanReadEmployeeRecord(req.user, employeeId);
     }
 
-    const scopedEmployeeIds = req.user?.role === "MANAGER"
-      ? (await Employee.find({ managerId: req.user.userId }).select("_id")).map((employee) => employee._id.toString())
-      : undefined;
+    const scopedEmployeeIds =
+      req.user?.role === "MANAGER"
+        ? await findDirectReportIds(req.user.userId)
+        : undefined;
 
     const result = await getAttendanceListService(
       page,
@@ -140,9 +132,7 @@ export const getMonthlySummary = async (
       throw new AppError("Employee ID is required", 400, "INVALID_EMPLOYEE_ID");
     }
 
-    if (req.user) {
-      await assertCanAccessEmployee(req.user.userId, req.user.role, targetEmployeeId);
-    }
+    await assertCanReadEmployeeRecord(req.user, targetEmployeeId);
 
     const year = Number(req.query.year) || new Date().getFullYear();
     const month = Number(req.query.month) || new Date().getMonth() + 1;

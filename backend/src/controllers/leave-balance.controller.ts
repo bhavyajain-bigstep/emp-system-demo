@@ -12,7 +12,7 @@ import {
   updateLeaveBalanceService,
 } from "../services/leave-balance.service";
 import { AppError } from "../errors/app-error";
-import { assertCanAccessEmployee } from "../services/authorization.service";
+import { assertCanReadEmployeeRecord } from "../services/authorization.service";
 
 export const createLeaveBalance =
   async (
@@ -98,13 +98,7 @@ export const getEmployeeLeaveBalances =
     next: NextFunction
   ) => {
     try {
-      const currentUserId = req.user?.userId;
-      const currentUserRole = req.user?.role;
-
-      if (!currentUserId || !currentUserRole) {
-        throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
-      }
-      await assertCanAccessEmployee(currentUserId, currentUserRole, req.params.employeeId);
+      await assertCanReadEmployeeRecord(req.user, req.params.employeeId);
 
       const yearParam =
         req.query.year;
@@ -143,10 +137,7 @@ export const getLeaveBalance =
         );
 
       const employeeId = (balance.employeeId as any)?._id?.toString() ?? balance.employeeId.toString();
-      if (!req.user) {
-        throw new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED");
-      }
-      await assertCanAccessEmployee(req.user.userId, req.user.role, employeeId);
+      await assertCanReadEmployeeRecord(req.user, employeeId);
 
       return res.status(200).json({
         success: true,
