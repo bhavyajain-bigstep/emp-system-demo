@@ -10,9 +10,12 @@ import {
   findBalancesByEmployee,
   updateBalance,
 } from "../repositories/leave-balance.repository";
-
-import { Employee } from "../models/employee.model";
-import { LeaveType } from "../models/leave-type.model";
+import {
+  findEmployeeByIdLean,
+} from "../repositories/employee.repository";
+import {
+  findLeaveTypeById,
+} from "../repositories/leave-type.repository";
 import { logAuditEvent } from "./audit-log.service";
 
 interface CreateBalanceInput {
@@ -52,7 +55,7 @@ export const createLeaveBalanceService =
     }
 
     const employee =
-      await Employee.findById(
+      await findEmployeeByIdLean(
         data.employeeId
       );
 
@@ -65,7 +68,7 @@ export const createLeaveBalanceService =
     }
 
     const leaveType =
-      await LeaveType.findById(
+      await findLeaveTypeById(
         data.leaveTypeId
       );
 
@@ -162,7 +165,7 @@ export const getEmployeeLeaveBalancesService =
     }
 
     const employee =
-      await Employee.findById(
+      await findEmployeeByIdLean(
         employeeId
       );
 

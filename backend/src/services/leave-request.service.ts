@@ -286,8 +286,19 @@ export const getEmployeeLeaveRequestsService =
   };
 
 export const getPendingLeaveRequestsService =
-  async () => {
-    return findPendingLeaveRequests();
+  async (scopedEmployeeIds?: string[]) => {
+    const requests = await findPendingLeaveRequests();
+
+    if (!scopedEmployeeIds) {
+      return requests;
+    }
+
+    const scope = new Set(scopedEmployeeIds);
+    return requests.filter((r) => {
+      const emp = r.employeeId as any;
+      const employeeId = emp?._id?.toString() ?? emp?.toString();
+      return employeeId != null && scope.has(employeeId);
+    });
   };
 
 export const approveLeaveRequestService =

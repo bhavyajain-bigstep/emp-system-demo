@@ -3,6 +3,8 @@ import {
   IEmployee,
 } from "../models/employee.model";
 
+import { Types } from "mongoose";
+
 export const findEmployeeById = async (
   id: string
 ): Promise<IEmployee | null> => {
@@ -15,6 +17,12 @@ export const findEmployeeById = async (
       "departmentId",
       "name"
     );
+};
+
+export const findEmployeeByIdLean = async (
+  id: string
+): Promise<IEmployee | null> => {
+  return Employee.findById(id).lean() as unknown as Promise<IEmployee | null>;
 };
 
 export const findEmployeeByEmail = async (
@@ -105,4 +113,45 @@ export const countActiveEmployeesInDepartment = async (
     departmentId,
     status: "ACTIVE",
   });
+};
+
+export const findEmployeeIdsByFilter = async (
+  filter: Record<string, unknown>
+): Promise<string[]> => {
+  const docs = await Employee.find(filter)
+    .select("_id")
+    .lean();
+  return docs.map((d) => d._id.toString());
+};
+
+export const findManagerTeamAndSelfIds = async (
+  managerId: string
+): Promise<string[]> => {
+  if (!Types.ObjectId.isValid(managerId)) return [];
+  return findEmployeeIdsByFilter({
+    $or: [
+      { managerId: new Types.ObjectId(managerId) },
+      { _id: new Types.ObjectId(managerId) },
+    ],
+  });
+};
+
+export const findDirectReportIds = async (
+  managerId: string
+): Promise<string[]> => {
+  if (!Types.ObjectId.isValid(managerId)) return [];
+  const docs = await Employee.find({ managerId })
+    .select("_id")
+    .lean();
+  return docs.map((d) => d._id.toString());
+};
+
+export const getEmployeeManagerId = async (
+  employeeId: string
+): Promise<string | null> => {
+  if (!Types.ObjectId.isValid(employeeId)) return null;
+  const doc = await Employee.findById(employeeId)
+    .select("managerId")
+    .lean() as unknown as { managerId?: Types.ObjectId } | null;
+  return doc?.managerId?.toString() ?? null;
 };

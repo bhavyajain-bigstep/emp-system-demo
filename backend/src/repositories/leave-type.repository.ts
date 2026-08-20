@@ -8,7 +8,8 @@ export const findLeaveTypes =
     return LeaveType.find()
       .sort({
         name: 1,
-      });
+      })
+      .lean() as unknown as Promise<ILeaveType[]>;
   };
 
 export const findActiveLeaveTypes =
@@ -17,14 +18,14 @@ export const findActiveLeaveTypes =
       status: "ACTIVE",
     }).sort({
       name: 1,
-    });
+    }).lean() as unknown as Promise<ILeaveType[]>;
   };
 
 export const findLeaveTypeById =
   async (
     id: string
   ): Promise<ILeaveType | null> => {
-    return LeaveType.findById(id);
+    return LeaveType.findById(id).lean() as unknown as Promise<ILeaveType | null>;
   };
 
 export const findLeaveTypeByCode =
@@ -33,7 +34,7 @@ export const findLeaveTypeByCode =
   ): Promise<ILeaveType | null> => {
     return LeaveType.findOne({
       code: code.toUpperCase(),
-    });
+    }).lean() as unknown as Promise<ILeaveType | null>;
   };
 
 export const findLeaveTypeByName =
@@ -42,7 +43,7 @@ export const findLeaveTypeByName =
   ): Promise<ILeaveType | null> => {
     return LeaveType.findOne({
       name: name.trim(),
-    });
+    }).lean() as unknown as Promise<ILeaveType | null>;
   };
 
 export const createLeaveType =

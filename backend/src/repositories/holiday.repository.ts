@@ -43,7 +43,23 @@ export const findAllHolidays =
       )
       .sort({
         date: 1,
-      });
+      })
+      .lean() as unknown as Promise<IHoliday[]>;
+  };
+
+export const findMandatoryHolidaysInRange =
+  async (startDate: Date, endDate: Date): Promise<IHoliday[]> => {
+    return Holiday.find({
+      date: { $gte: startDate, $lte: endDate },
+      optional: false,
+    }).lean() as unknown as Promise<IHoliday[]>;
+  };
+
+export const findHolidaysInRange =
+  async (startDate: Date, endDate: Date): Promise<IHoliday[]> => {
+    return Holiday.find({
+      date: { $gte: startDate, $lte: endDate },
+    }).lean() as unknown as Promise<IHoliday[]>;
   };
 
 export const findHolidayById =
@@ -54,7 +70,8 @@ export const findHolidayById =
       .populate(
         "createdBy",
         "employeeCode name email"
-      );
+      )
+      .lean() as unknown as Promise<IHoliday | null>;
   };
 
 export const findHolidayByDate =
@@ -63,7 +80,7 @@ export const findHolidayByDate =
   ): Promise<IHoliday | null> => {
     return Holiday.findOne({
       date,
-    });
+    }).lean() as unknown as Promise<IHoliday | null>;
   };
 
 export const updateHoliday =

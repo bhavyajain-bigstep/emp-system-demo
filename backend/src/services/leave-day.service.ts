@@ -1,5 +1,7 @@
-import { Holiday, IHoliday } from "../models/holiday.model";
 import { env } from "../config/env";
+import {
+  findHolidaysInRange,
+} from "../repositories/holiday.repository";
 import {
   getLocalDateString,
   getLocalDayOfWeek,
@@ -92,12 +94,7 @@ export async function calculateLeaveDaysDetailed(
   endQueryDate.setHours(23, 59, 59, 999);
   endQueryDate.setDate(endQueryDate.getDate() + 1);
 
-  const holidays: IHoliday[] = await Holiday.find({
-    date: {
-      $gte: startQueryDate,
-      $lte: endQueryDate,
-    },
-  });
+  const holidays = await findHolidaysInRange(startQueryDate, endQueryDate);
 
   const mandatoryHolidayDates = new Set<string>();
   const optionalHolidayDates = new Set<string>();

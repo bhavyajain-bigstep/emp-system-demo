@@ -1,10 +1,17 @@
 import { Types } from "mongoose";
-import { Attendance, IAttendance } from "../models/attendance.model";
-import { LeaveRequest, ILeaveRequest } from "../models/leave-request.model";
-import { Employee } from "../models/employee.model";
 import { AppError } from "../errors/app-error";
 import { stringify } from "csv-stringify/sync";
 import { Readable } from "stream";
+import {
+  findAttendanceReportPage,
+} from "../repositories/attendance.repository";
+import {
+  findLeaveReportPage,
+} from "../repositories/leave-request.repository";
+import {
+  findEmployeeIdsByFilter,
+  findManagerTeamAndSelfIds,
+} from "../repositories/employee.repository";
 
 export interface AttendanceReportFilter {
   startDate?: string;
@@ -45,14 +52,10 @@ const buildAuthorizedEmployeeFilter = async (
   }
 
   if (auth?.role === "MANAGER") {
-    // Manager can view themselves and direct reports
-    const teamMembers = await Employee.find({
-      $or: [{ managerId: auth.userId }, { _id: auth.userId }],
-    }).select("_id");
-    const allowedIds = teamMembers.map((t) => t._id);
+    const allowedIds = await findManagerTeamAndSelfIds(auth.userId);
 
     if (requestedEmployeeId) {
-      if (!allowedIds.some((id) => id.toString() === requestedEmployeeId)) {
+      if (!allowedIds.includes(requestedEmployeeId)) {
         throw new AppError("You can only access reports for your team", 403, "FORBIDDEN");
       }
       empFilter._id = new Types.ObjectId(requestedEmployeeId);
@@ -66,7 +69,6 @@ const buildAuthorizedEmployeeFilter = async (
     return empFilter;
   }
 
-  // HR / ADMIN
   if (requestedEmployeeId) {
     empFilter._id = new Types.ObjectId(requestedEmployeeId);
   }
@@ -77,87 +79,118 @@ const buildAuthorizedEmployeeFilter = async (
   return empFilter;
 };
 
+const buildAttendanceQuery = (
+  filter: AttendanceReportFilter,
+  targetEmployeeIds: string[] | null
+): Record<string, any> => {
+  const from = filter.from || filter.startDate;
+  const to = filter.to || filter.endDate;
+
+  const query: Record<string, any> = {};
+
+  if (targetEmployeeIds !== null) {
+    query.employeeId = { $in: targetEmployeeIds };
+  }
+
+  if (filter.status) {
+    query.status = filter.status;
+  }
+
+  if (from || to) {
+    query.date = {
+      ...(from ? { $gte: from } : {}),
+      ...(to ? { $lte: to } : {}),
+    };
+  }
+
+  return query;
+};
+
+const buildLeaveQuery = (
+  filter: LeaveReportFilter,
+  targetEmployeeIds: string[] | null
+): Record<string, any> => {
+  const from = filter.from || filter.startDate;
+  const to = filter.to || filter.endDate;
+
+  const query: Record<string, any> = {};
+
+  if (targetEmployeeIds !== null) {
+    query.employeeId = { $in: targetEmployeeIds };
+  }
+
+  if (filter.status) {
+    query.status = filter.status;
+  }
+
+  if (filter.leaveTypeId) {
+    query.leaveTypeId = new Types.ObjectId(filter.leaveTypeId);
+  }
+
+  if (from || to) {
+    if (from && to) {
+      query.fromDate = { $lte: new Date(to) };
+      query.toDate = { $gte: new Date(from) };
+    } else if (from) {
+      query.toDate = { $gte: new Date(from) };
+    } else if (to) {
+      query.fromDate = { $lte: new Date(to) };
+    }
+  }
+
+  return query;
+};
+
+const formatAttendanceRecord = (record: any) => {
+  const checkIn = record.checkInAt ? new Date(record.checkInAt) : null;
+  const checkOut = record.checkOutAt ? new Date(record.checkOutAt) : null;
+
+  let workingHours = 0;
+  let workingMinutes = 0;
+  if (checkIn && checkOut) {
+    const diffMs = checkOut.getTime() - checkIn.getTime();
+    workingMinutes = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+    workingHours = Number((workingMinutes / 60).toFixed(2));
+  }
+
+  return {
+    _id: record._id,
+    date: record.date,
+    status: record.status,
+    checkInAt: record.checkInAt,
+    checkOutAt: record.checkOutAt,
+    workingHours,
+    workingMinutes,
+    isLate: record.status === "LATE",
+    timezone: record.timezone,
+    employee: record.employeeId,
+  };
+};
+
 export const getAttendanceReportService = async (
   filter: AttendanceReportFilter,
   page = 1,
   limit = 20,
   auth?: AuthContext
 ) => {
-  const from = filter.from || filter.startDate;
-  const to = filter.to || filter.endDate;
-
   const empFilter = await buildAuthorizedEmployeeFilter(
     filter.employeeId,
     filter.departmentId,
     auth
   );
 
-  let targetEmployeeIds: Types.ObjectId[] | null = null;
+  let targetEmployeeIds: string[] | null = null;
   if (Object.keys(empFilter).length > 0) {
-    const matchedEmployees = await Employee.find(empFilter).select("_id");
-    targetEmployeeIds = matchedEmployees.map((e) => e._id as Types.ObjectId);
+    targetEmployeeIds = await findEmployeeIdsByFilter(empFilter);
   }
 
-  const attendanceQuery: Record<string, any> = {};
-
-  if (targetEmployeeIds !== null) {
-    attendanceQuery.employeeId = { $in: targetEmployeeIds };
-  }
-
-  if (filter.status) {
-    attendanceQuery.status = filter.status;
-  }
-
-  if (from || to) {
-    attendanceQuery.date = {
-      ...(from ? { $gte: from } : {}),
-      ...(to ? { $lte: to } : {}),
-    };
-  }
-
+  const attendanceQuery = buildAttendanceQuery(filter, targetEmployeeIds);
   const skip = (page - 1) * limit;
 
-  const [records, total] = await Promise.all([
-    Attendance.find(attendanceQuery)
-      .populate({
-        path: "employeeId",
-        select: "employeeCode name email role departmentId managerId",
-        populate: { path: "departmentId", select: "name" },
-      })
-      .sort({ date: -1, checkInAt: -1 })
-      .skip(skip)
-      .limit(limit),
-    Attendance.countDocuments(attendanceQuery),
-  ]);
-
-  const formattedData = records.map((record) => {
-    const checkIn = record.checkInAt ? new Date(record.checkInAt) : null;
-    const checkOut = record.checkOutAt ? new Date(record.checkOutAt) : null;
-
-    let workingHours = 0;
-    let workingMinutes = 0;
-    if (checkIn && checkOut) {
-      const diffMs = checkOut.getTime() - checkIn.getTime();
-      workingMinutes = Math.max(0, Math.floor(diffMs / (1000 * 60)));
-      workingHours = Number((workingMinutes / 60).toFixed(2));
-    }
-
-    return {
-      _id: record._id,
-      date: record.date,
-      status: record.status,
-      checkInAt: record.checkInAt,
-      checkOutAt: record.checkOutAt,
-      workingHours,
-      workingMinutes,
-      isLate: record.status === "LATE",
-      timezone: record.timezone,
-      employee: record.employeeId,
-    };
-  });
+  const { records, total } = await findAttendanceReportPage(attendanceQuery, skip, limit);
 
   return {
-    records: formattedData,
+    records: records.map(formatAttendanceRecord),
     page,
     limit,
     total,
@@ -219,62 +252,21 @@ export const getLeaveReportService = async (
   limit = 20,
   auth?: AuthContext
 ) => {
-  const from = filter.from || filter.startDate;
-  const to = filter.to || filter.endDate;
-
   const empFilter = await buildAuthorizedEmployeeFilter(
     filter.employeeId,
     filter.departmentId,
     auth
   );
 
-  let targetEmployeeIds: Types.ObjectId[] | null = null;
+  let targetEmployeeIds: string[] | null = null;
   if (Object.keys(empFilter).length > 0) {
-    const matchedEmployees = await Employee.find(empFilter).select("_id");
-    targetEmployeeIds = matchedEmployees.map((e) => e._id as Types.ObjectId);
+    targetEmployeeIds = await findEmployeeIdsByFilter(empFilter);
   }
 
-  const leaveQuery: Record<string, any> = {};
-
-  if (targetEmployeeIds !== null) {
-    leaveQuery.employeeId = { $in: targetEmployeeIds };
-  }
-
-  if (filter.status) {
-    leaveQuery.status = filter.status;
-  }
-
-  if (filter.leaveTypeId) {
-    leaveQuery.leaveTypeId = new Types.ObjectId(filter.leaveTypeId);
-  }
-
-  if (from || to) {
-    if (from && to) {
-      leaveQuery.fromDate = { $lte: new Date(to) };
-      leaveQuery.toDate = { $gte: new Date(from) };
-    } else if (from) {
-      leaveQuery.toDate = { $gte: new Date(from) };
-    } else if (to) {
-      leaveQuery.fromDate = { $lte: new Date(to) };
-    }
-  }
-
+  const leaveQuery = buildLeaveQuery(filter, targetEmployeeIds);
   const skip = (page - 1) * limit;
 
-  const [records, total] = await Promise.all([
-    LeaveRequest.find(leaveQuery)
-      .populate({
-        path: "employeeId",
-        select: "employeeCode name email role departmentId managerId",
-        populate: { path: "departmentId", select: "name" },
-      })
-      .populate("leaveTypeId", "name code annualQuota rules")
-      .populate("approvedBy", "employeeCode name email role")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
-    LeaveRequest.countDocuments(leaveQuery),
-  ]);
+  const { records, total } = await findLeaveReportPage(leaveQuery, skip, limit);
 
   return {
     records,

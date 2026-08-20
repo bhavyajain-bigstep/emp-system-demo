@@ -17,7 +17,8 @@ export const findAttendanceRecords = async (
       .populate("employeeId", "name employeeCode")
       .sort({ date: -1 })
       .skip(skip)
-      .limit(limit),
+      .limit(limit)
+      .lean() as unknown as Promise<IAttendance[]>,
 
     Attendance.countDocuments(filter),
   ]);
@@ -33,7 +34,9 @@ export const findAttendanceInRange = async (
   return Attendance.find({
     employeeId,
     date: { $gte: fromDate, $lte: toDate },
-  }).sort({ date: 1 });
+  })
+    .sort({ date: 1 })
+    .lean() as unknown as Promise<IAttendance[]>;
 };
 
 export const createAttendance = async (
@@ -50,4 +53,27 @@ export const updateAttendance = async (
     new: true,
     runValidators: true,
   });
+};
+
+export const findAttendanceReportPage = async (
+  filter: Record<string, unknown>,
+  skip: number,
+  limit: number
+) => {
+  const [records, total] = await Promise.all([
+    Attendance.find(filter)
+      .populate({
+        path: "employeeId",
+        select: "employeeCode name email role departmentId managerId",
+        populate: { path: "departmentId", select: "name" },
+      })
+      .sort({ date: -1, checkInAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean() as unknown as Promise<IAttendance[]>,
+
+    Attendance.countDocuments(filter),
+  ]);
+
+  return { records, total };
 };

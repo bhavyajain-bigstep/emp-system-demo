@@ -3,7 +3,6 @@ import { Types } from "mongoose";
 import { AppError } from "../errors/app-error";
 import { env } from "../config/env";
 import { findEmployeeById } from "../repositories/employee.repository";
-import { Holiday } from "../models/holiday.model";
 import {
   createAttendance,
   findAttendanceByEmployeeAndDate,
@@ -11,6 +10,9 @@ import {
   findAttendanceRecords,
   updateAttendance,
 } from "../repositories/attendance.repository";
+import {
+  findMandatoryHolidaysInRange,
+} from "../repositories/holiday.repository";
 import {
   getLocalDateString,
   getLocalMinutesSinceMidnight,
@@ -178,10 +180,7 @@ export const getMonthlyAttendanceSummaryService = async (
   const startQueryDate = new Date(Date.UTC(year, month - 1, 1));
   const endQueryDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
-  const holidays = await Holiday.find({
-    date: { $gte: startQueryDate, $lte: endQueryDate },
-    optional: false,
-  });
+  const holidays = await findMandatoryHolidaysInRange(startQueryDate, endQueryDate);
 
   const holidayDateStrings = holidays.map((h) =>
     getLocalDateString(h.date, employee.timezone)

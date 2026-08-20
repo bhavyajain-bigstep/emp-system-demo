@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { AuditLog, IAuditLog } from "../models/audit-log.model";
 
 export const createAuditLog = async (
@@ -16,7 +17,9 @@ export const findAuditLogs = async (
       .populate("actorId", "employeeCode name email role")
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit),
+      .limit(limit)
+      .lean() as unknown as Promise<IAuditLog[]>,
+
     AuditLog.countDocuments(filter),
   ]);
 
