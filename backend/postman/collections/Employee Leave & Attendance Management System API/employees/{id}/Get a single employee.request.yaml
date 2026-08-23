@@ -1,0 +1,15 @@
+$kind: http-request
+description: HR or ADMIN can view any employee. Managers can view their direct reports. Employees can view their own record.
+url: "{{baseUrl}}/employees/:id"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  id: string
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get a single employee.resources/examples
+order: 1000

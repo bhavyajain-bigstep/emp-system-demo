@@ -17,10 +17,12 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:5000",
         changeOrigin: true,
+        cookieDomainRewrite: "localhost",
       },
       "/health": {
         target: "http://localhost:5000",
         changeOrigin: true,
+        cookieDomainRewrite: "localhost",
       },
     },
   },

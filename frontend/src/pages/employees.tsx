@@ -18,16 +18,16 @@ import { formatDate } from "@/lib/utils";
 import type { Employee } from "@/types";
 
 const ROLE_BADGE: Record<string, string> = {
-  ADMIN: "bg-violet-50 text-violet-700 ring-violet-200",
-  HR: "bg-sky-50 text-sky-700 ring-sky-200",
-  MANAGER: "bg-amber-50 text-amber-700 ring-amber-200",
-  EMPLOYEE: "bg-surface-100 text-surface-600 ring-surface-200",
+  ADMIN: "bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:ring-violet-800",
+  HR: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800",
+  MANAGER: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800",
+  EMPLOYEE: "bg-[var(--bg-hover)] text-[var(--text-secondary)] ring-[var(--border-primary)]",
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  INACTIVE: "bg-surface-100 text-surface-500 ring-surface-200",
-  SUSPENDED: "bg-red-50 text-red-700 ring-red-200",
+  ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800",
+  INACTIVE: "bg-[var(--bg-hover)] text-[var(--text-muted)] ring-[var(--border-primary)]",
+  SUSPENDED: "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:ring-rose-800",
 };
 
 function deptName(e: Employee): string {
@@ -98,12 +98,12 @@ export default function EmployeesPage() {
   return (
     <div>
       <PageHeader
-        title="Employees"
+        title="People"
         description="Manage employee profiles, roles and departments."
         actions={
           <Button onClick={() => setFormOpen(true)}>
             <Plus className="size-4" />
-            Add employee
+            Add person
           </Button>
         }
       />
@@ -112,7 +112,7 @@ export default function EmployeesPage() {
         <CardBody>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--text-muted)]" />
               <Input className="pl-9" placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <Select className="sm:w-56" value={deptFilter} onChange={(e) => { setDeptFilter(e.target.value); setPage(1); }}>
@@ -136,12 +136,12 @@ export default function EmployeesPage() {
           ) : employees.isError ? (
             <ErrorState message={employees.error?.message ?? "Failed to load"} onRetry={() => employees.refetch()} />
           ) : filtered?.length === 0 ? (
-            <EmptyState title="No employees found" description="Try adjusting your filters or add a new employee." />
+            <EmptyState title="No people found" description="Try adjusting your filters or add a new person." />
           ) : (
             <Table>
               <THead>
                 <TR>
-                  <TH>Employee</TH>
+                  <TH>Person</TH>
                   <TH>Department</TH>
                   <TH>Role</TH>
                   <TH>Status</TH>
@@ -154,7 +154,7 @@ export default function EmployeesPage() {
                   <TR key={e._id}>
                     <TD>
                       <div className="flex items-center gap-3">
-                        <div className="flex size-9 items-center justify-center rounded-full bg-primary-50 text-xs font-semibold text-primary-600">
+                        <div className="flex size-9 items-center justify-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300 text-xs font-semibold">
                           {e.name
                             .split(" ")
                             .map((p) => p[0])
@@ -163,16 +163,16 @@ export default function EmployeesPage() {
                             .toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium text-surface-900">{e.name}</p>
-                          <p className="text-xs text-surface-500">
+                          <p className="font-medium text-[var(--text-primary)]">{e.name}</p>
+                          <p className="text-xs text-[var(--text-muted)]">
                             {e.email} · {e.employeeCode}
                           </p>
                         </div>
                       </div>
                     </TD>
                     <TD>
-                      <span className="flex items-center gap-1.5 text-surface-600">
-                        <Building2 className="size-4 text-surface-400" />
+                      <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                        <Building2 className="size-4 text-[var(--text-muted)]" />
                         {deptName(e)}
                       </span>
                     </TD>
@@ -182,7 +182,7 @@ export default function EmployeesPage() {
                     <TD>
                       <Badge className={STATUS_BADGE[e.status] ?? ""}>{e.status}</Badge>
                     </TD>
-                    <TD className="text-surface-600">{e.joiningDate ? formatDate(e.joiningDate) : "—"}</TD>
+                    <TD className="text-[var(--text-secondary)]">{e.joiningDate ? formatDate(e.joiningDate) : "—"}</TD>
                     <TD className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => setEditTarget(e)}>
@@ -193,11 +193,11 @@ export default function EmployeesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="text-rose-600 hover:bg-rose-50"
                             onClick={() => setSuspendTarget(e)}
                           >
                             Suspend
-                         </Button>
+                          </Button>
                         )}
                         {isSuperAdmin && e.status === "SUSPENDED" && (
                           <Button
@@ -207,7 +207,7 @@ export default function EmployeesPage() {
                             onClick={() => setReactivateTarget(e)}
                           >
                             Reactivate
-                         </Button>
+                          </Button>
                         )}
                       </div>
                     </TD>
@@ -218,9 +218,9 @@ export default function EmployeesPage() {
           )}
 
           {meta && meta.totalPages > 1 ? (
-            <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-4">
-              <p className="text-sm text-surface-500">
-                Page {meta.page} of {meta.totalPages} · {meta.total} employees
+            <div className="mt-4 flex items-center justify-between border-t border-[var(--border-primary)] pt-4">
+              <p className="text-sm text-[var(--text-muted)]">
+                Page {meta.page} of {meta.totalPages} · {meta.total} people
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={meta.page <= 1} onClick={() => setPage((p) => p - 1)}>
@@ -254,13 +254,13 @@ export default function EmployeesPage() {
         onConfirm={() =>
           suspendTarget && statusMutation.mutate({ id: suspendTarget._id, status: "SUSPENDED" })
         }
-        title="Suspend employee"
+        title="Suspend person"
         message={
           suspendTarget
             ? `${suspendTarget.name} will no longer be able to sign in. You can reactivate them later.`
             : ""
         }
-        confirmLabel="Suspend employee"
+        confirmLabel="Suspend person"
         loading={statusMutation.isPending}
       />
       <ConfirmDialog
@@ -269,7 +269,7 @@ export default function EmployeesPage() {
         onConfirm={() =>
           reactivateTarget && statusMutation.mutate({ id: reactivateTarget._id, status: "ACTIVE" })
         }
-        title="Reactivate employee"
+        title="Reactivate person"
         message={
           reactivateTarget
             ? `${reactivateTarget.name} will be able to sign in again.`
@@ -380,7 +380,7 @@ function EmployeeFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? `Edit ${employee?.name ?? "employee"}` : "Add employee"}
+      title={isEdit ? `Edit ${employee?.name ?? "employee"}` : "Add person"}
       size="lg"
       footer={
         <>

@@ -1,0 +1,59 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/auth/login"
+  method: POST
+  headers:
+    Content-Type: application/json
+    Accept: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "email": "admin@example.com",
+        "password": "password123"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Login successful",
+        "data": {
+          "accessToken": "string",
+          "user": {
+            "_id": "6612abf4c1a2b3d4e5f6a7b8",
+            "employeeCode": "EMP-1042",
+            "name": "Jayant Kaushik",
+            "email": "jayant@example.com",
+            "role": "EMPLOYEE",
+            "managerId": "string",
+            "departmentId": "string",
+            "joiningDate": "1988-10-04T05:37:33.823Z",
+            "status": "ACTIVE",
+            "timezone": "Asia/Kolkata",
+            "createdAt": "1998-09-19T01:33:33.954Z",
+            "updatedAt": "1973-05-04T03:02:15.611Z"
+          },
+          "token": "string",
+          "employee": {
+            "_id": "6612abf4c1a2b3d4e5f6a7b8",
+            "employeeCode": "EMP-1042",
+            "name": "Jayant Kaushik",
+            "email": "jayant@example.com",
+            "role": "EMPLOYEE",
+            "managerId": "string",
+            "departmentId": "string",
+            "joiningDate": "1977-04-11T14:39:09.769Z",
+            "status": "ACTIVE",
+            "timezone": "Asia/Kolkata",
+            "createdAt": "2023-10-13T01:16:36.287Z",
+            "updatedAt": "1991-01-31T05:18:51.297Z"
+          }
+        }
+      }
+order: 1000

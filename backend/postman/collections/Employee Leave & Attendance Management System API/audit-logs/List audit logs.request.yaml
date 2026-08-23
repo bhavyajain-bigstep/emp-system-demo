@@ -1,0 +1,20 @@
+$kind: http-request
+description: Requires HR or ADMIN role.
+url: "{{baseUrl}}/audit-logs?page=1&limit=50&eventType=string&actorId=string&entityType=string&entityId=string&fromDate=1966-02-19T20:56:03.944Z&toDate=1966-02-19T20:56:03.944Z"
+method: GET
+queryParams:
+  page: "1"
+  limit: "50"
+  eventType: string
+  actorId: string
+  entityType: string
+  entityId: string
+  fromDate: 1966-02-19T20:56:03.944Z
+  toDate: 1966-02-19T20:56:03.944Z
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List audit logs.resources/examples
+order: 2000

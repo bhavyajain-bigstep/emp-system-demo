@@ -19,7 +19,7 @@ import type { LeaveRequest } from "@/types";
 
 function leaveTypeLabel(req: LeaveRequest): string {
   const lt = req.leaveTypeId as { name?: string } | string;
-  return typeof lt === "string" ? "Leave" : lt?.name ?? "Leave";
+  return typeof lt === "string" ? "Time Off" : lt?.name ?? "Time Off";
 }
 
 export default function LeavesPage() {
@@ -36,7 +36,7 @@ export default function LeavesPage() {
   const cancelMutation = useMutation({
     mutationFn: (id: string) => leaveApi.cancel(id),
     onSuccess: () => {
-      toast("success", "Leave request cancelled.");
+      toast("success", "Time off request cancelled.");
       setCancelTarget(null);
       queryClient.invalidateQueries({ queryKey: ["leaves", "mine"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -47,30 +47,30 @@ export default function LeavesPage() {
   return (
     <div>
       <PageHeader
-        title="My Leaves"
-        description="Apply for leave and track the status of your requests."
+        title="My Time Off"
+        description="Request time off and track the status of your requests."
         actions={
           <Button onClick={() => setApplyOpen(true)}>
             <Plus className="size-4" />
-            Apply for leave
+            Request time off
           </Button>
         }
       />
 
       <Card>
-        <CardHeader title="Leave requests" subtitle="All your submitted leave applications" />
+        <CardHeader title="Time off requests" subtitle="All your submitted time off applications" />
         {leaves.isLoading ? (
           <Spinner />
         ) : leaves.isError ? (
-          <ErrorState message={leaves.error?.message ?? "Failed to load leaves"} onRetry={() => leaves.refetch()} />
+          <ErrorState message={leaves.error?.message ?? "Failed to load time off"} onRetry={() => leaves.refetch()} />
         ) : leaves.data?.length === 0 ? (
           <EmptyState
-            title="No leave requests yet"
-            description="Apply for leave to see your requests here."
+            title="No time off requests yet"
+            description="Request time off to see your requests here."
             action={
               <Button onClick={() => setApplyOpen(true)}>
                 <Plus className="size-4" />
-                Apply for leave
+                Request time off
               </Button>
             }
           />
@@ -78,7 +78,7 @@ export default function LeavesPage() {
           <Table>
             <THead>
               <TR>
-                <TH>Leave type</TH>
+                <TH>Type</TH>
                 <TH>From</TH>
                 <TH>To</TH>
                 <TH>Days</TH>
@@ -89,7 +89,7 @@ export default function LeavesPage() {
             <TBody>
               {leaves.data!.map((leave) => (
                 <TR key={leave._id}>
-                  <TD className="font-medium text-surface-900">{leaveTypeLabel(leave)}</TD>
+                  <TD className="font-medium text-[var(--text-primary)]">{leaveTypeLabel(leave)}</TD>
                   <TD>{formatDate(leave.fromDate)}</TD>
                   <TD>{formatDate(leave.toDate)}</TD>
                   <TD>{leave.days}</TD>
@@ -98,7 +98,7 @@ export default function LeavesPage() {
                   </TD>
                   <TD className="text-right">
                     {(leave.status === "PENDING" || leave.status === "APPROVED") && (
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => setCancelTarget(leave)}>
+                      <Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50" onClick={() => setCancelTarget(leave)}>
                         <XCircle className="size-4" />
                         Cancel
                       </Button>
@@ -116,15 +116,15 @@ export default function LeavesPage() {
         open={Boolean(cancelTarget)}
         onClose={() => setCancelTarget(null)}
         onConfirm={() => cancelTarget && cancelMutation.mutate(cancelTarget._id)}
-        title="Cancel leave request"
+        title="Cancel time off request"
         message={
           cancelTarget
-            ? `Are you sure you want to cancel your ${leaveTypeLabel(cancelTarget)} leave from ${formatDate(
+            ? `Are you sure you want to cancel your ${leaveTypeLabel(cancelTarget)} time off from ${formatDate(
                 cancelTarget.fromDate
               )} to ${formatDate(cancelTarget.toDate)}?`
             : ""
         }
-        confirmLabel="Cancel leave"
+        confirmLabel="Cancel request"
         loading={cancelMutation.isPending}
       />
     </div>
@@ -163,7 +163,7 @@ function ApplyLeaveModal({ open, onClose }: { open: boolean; onClose: () => void
         reason,
       }),
     onSuccess: () => {
-      toast("success", "Leave request submitted for approval.");
+      toast("success", "Time off request submitted for approval.");
       onClose();
       setLeaveTypeId("");
       setFromDate("");
@@ -174,9 +174,9 @@ function ApplyLeaveModal({ open, onClose }: { open: boolean; onClose: () => void
     },
     onError: (error) => {
       const code = extractErrorCode(error);
-      if (code === "INSUFFICIENT_LEAVE_BALANCE") toast("error", "Insufficient leave balance for the selected dates.");
-      else if (code === "LEAVE_OVERLAP") toast("error", "This request overlaps an existing pending or approved leave.");
-      else if (code === "INSUFFICIENT_NOTICE") toast("error", "This leave type requires advance notice.");
+      if (code === "INSUFFICIENT_LEAVE_BALANCE") toast("error", "Insufficient time off balance for the selected dates.");
+      else if (code === "LEAVE_OVERLAP") toast("error", "This request overlaps an existing pending or approved time off.");
+      else if (code === "INSUFFICIENT_NOTICE") toast("error", "This time off type requires advance notice.");
       else if (code === "MAX_CONSECUTIVE_DAYS_EXCEEDED") toast("error", "Request exceeds the maximum consecutive days allowed.");
       else toast("error", getErrorMessage(error));
     },
@@ -184,7 +184,7 @@ function ApplyLeaveModal({ open, onClose }: { open: boolean; onClose: () => void
 
   function handleSubmit() {
     const next: Record<string, string> = {};
-    if (!leaveTypeId) next.leaveTypeId = "Select a leave type";
+    if (!leaveTypeId) next.leaveTypeId = "Select a time off type";
     if (!fromDate) next.fromDate = "Start date is required";
     if (!toDate) next.toDate = "End date is required";
     if (fromDate && toDate && parseISO(toDate) < parseISO(fromDate)) next.toDate = "End date must be after start date";
@@ -197,7 +197,7 @@ function ApplyLeaveModal({ open, onClose }: { open: boolean; onClose: () => void
     <Modal
       open={open}
       onClose={onClose}
-      title="Apply for leave"
+      title="Request time off"
       size="lg"
       footer={
         <>
@@ -213,9 +213,9 @@ function ApplyLeaveModal({ open, onClose }: { open: boolean; onClose: () => void
     >
       <div className="space-y-4">
         <div>
-          <Label>Leave type</Label>
+          <Label>Time off type</Label>
           <Select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)}>
-            <option value="">Select a leave type</option>
+            <option value="">Select a time off type</option>
             {leaveTypes.data?.map((lt) => (
               <option key={lt._id} value={lt._id}>
                 {lt.name} ({lt.annualQuota} days / year)
@@ -224,7 +224,7 @@ function ApplyLeaveModal({ open, onClose }: { open: boolean; onClose: () => void
           </Select>
           <FieldError message={errors.leaveTypeId} />
           {selectedType ? (
-            <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg bg-surface-50 p-3 text-xs text-surface-600 sm:grid-cols-3">
+            <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg bg-[var(--bg-hover)] p-3 text-xs text-[var(--text-secondary)] sm:grid-cols-3">
               <span>Max consecutive: {selectedType.rules.maxConsecutiveDays} days</span>
               <span>Notice required: {selectedType.rules.minNoticeDays} days</span>
               <span>Weekends excluded: {selectedType.rules.excludeWeekends ? "Yes" : "No"}</span>
@@ -255,7 +255,7 @@ function ApplyLeaveModal({ open, onClose }: { open: boolean; onClose: () => void
           <Textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Describe the reason for your leave request..."
+            placeholder="Describe the reason for your time off request..."
           />
           <FieldError message={errors.reason} />
         </div>

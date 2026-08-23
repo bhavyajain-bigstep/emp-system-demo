@@ -1,0 +1,47 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/departments?page=1&limit=10&status=ACTIVE"
+  method: GET
+  headers:
+    Accept: application/json
+  queryParams:
+    page: "1"
+    limit: "10"
+    status: ACTIVE
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Departments fetched successfully",
+        "data": [
+          {
+            "_id": "string",
+            "name": "Engineering",
+            "managerId": "string",
+            "status": "ACTIVE",
+            "createdAt": "1979-01-24T21:23:18.327Z",
+            "updatedAt": "1981-04-15T05:04:48.593Z"
+          },
+          {
+            "_id": "string",
+            "name": "Engineering",
+            "managerId": "string",
+            "status": "ACTIVE",
+            "createdAt": "2000-02-18T13:42:28.910Z",
+            "updatedAt": "1967-02-22T10:39:09.236Z"
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "limit": 10,
+          "total": 100,
+          "totalPages": 10
+        }
+      }
+order: 1000

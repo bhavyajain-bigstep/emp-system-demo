@@ -13,6 +13,7 @@ import {
   updateLeaveType,
 } from "../repositories/leave-type.repository";
 import { logAuditEvent } from "./audit-log.service";
+import { createBalancesForLeaveType } from "./leave-balance.service";
 
 interface LeaveRulesInput {
   allowNegativeBalance: boolean;
@@ -89,6 +90,8 @@ export const createLeaveTypeService =
       newValue: newLeaveType,
       metadata: { code: newLeaveType.code, annualQuota: newLeaveType.annualQuota },
     });
+
+    await createBalancesForLeaveType(newLeaveType._id.toString(), actorId);
 
     return newLeaveType;
   };

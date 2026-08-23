@@ -41,7 +41,7 @@ const ATTENDANCE_COLORS: Record<string, string> = {
   present: "#10b981",
   late: "#f59e0b",
   absent: "#ef4444",
-  halfday: "#0ea5e9",
+  halfday: "#3b82f6",
 };
 
 export default function DashboardPage() {
@@ -93,21 +93,21 @@ export default function DashboardPage() {
         title={`Welcome back, ${user?.name?.split(" ")[0] ?? "there"}`}
         description={
           user?.role === "ADMIN" || user?.role === "HR"
-            ? "Organization-wide overview of attendance, leave, and headcount."
-            : "Overview of your team's attendance and leave activity."
+            ? "Organization-wide overview of attendance, time off, and headcount."
+            : "Overview of your team's attendance and time off activity."
         }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Active employees"
+          label="Active people"
           value={formatNumber(data.employees.active)}
           hint={`${formatNumber(data.employees.total)} total`}
           icon={<Users className="size-5" />}
           tone="primary"
         />
         <StatCard
-          label="Pending leave requests"
+          label="Pending requests"
           value={formatNumber(data.leaves.pending)}
           hint="Awaiting approval"
           icon={<Plane className="size-5" />}
@@ -116,7 +116,7 @@ export default function DashboardPage() {
         <StatCard
           label="Approved this month"
           value={formatNumber(data.leaves.approvedThisMonth)}
-          hint="Leave approved in current month"
+          hint="Time off approved in current month"
           icon={<CheckCircle2 className="size-5" />}
           tone="green"
         />
@@ -127,75 +127,97 @@ export default function DashboardPage() {
           icon={<CalendarClock className="size-5" />}
           tone="sky"
         />
-     </div>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title="Attendance today" subtitle="Breakdown of today's check-ins by status" />
           <CardBody className="h-72">
             {attendancePie.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-sm text-surface-400">
+              <div className="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">
                 No attendance records yet today.
-             </div>
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={attendancePie} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}>
+                  <Pie
+                    data={attendancePie}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={95}
+                    paddingAngle={2}
+                  >
                     {attendancePie.map((entry) => (
                       <Cell
                         key={entry.name}
                         fill={ATTENDANCE_COLORS[entry.name.toLowerCase().replace(" ", "")]}
                       />
                     ))}
-                 </Pie>
-                  <Tooltip />
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--bg-surface)",
+                      border: "1px solid var(--border-primary)",
+                      borderRadius: "8px",
+                    }}
+                  />
                   <Legend verticalAlign="bottom" height={36} />
-               </PieChart>
-             </ResponsiveContainer>
+                </PieChart>
+              </ResponsiveContainer>
             )}
-         </CardBody>
-       </Card>
+          </CardBody>
+        </Card>
 
         <Card>
-          <CardHeader title="Leave requests by type" subtitle="Distribution of leave applications" />
+          <CardHeader title="Time off requests by type" subtitle="Distribution of time off applications" />
           <CardBody className="h-72">
             {leavesByType.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-sm text-surface-400">
-                No leave data available.
-             </div>
+              <div className="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">
+                No time off data available.
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={leavesByType} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="leaves" fill="#2549e5" radius={[6, 6, 0, 0]} />
-               </BarChart>
-             </ResponsiveContainer>
+                <BarChart
+                  data={leavesByType}
+                  margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--text-muted)" }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "var(--text-muted)" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--bg-surface)",
+                      border: "1px solid var(--border-primary)",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Bar dataKey="leaves" fill="var(--border-focus)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             )}
-         </CardBody>
-       </Card>
-     </div>
+          </CardBody>
+        </Card>
+      </div>
 
       <Card className="mt-6">
         <CardBody>
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
               <TrendingUp className="size-5" />
-           </div>
+            </div>
             <div>
-              <p className="text-sm font-semibold text-surface-900">HR pulse</p>
-              <p className="mt-1 text-sm text-surface-500">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Workforce pulse</p>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 {data.employees.active} of {data.employees.total} employees are active.{" "}
-                {data.leaves.pending} leave request{data.leaves.pending === 1 ? "" : "s"} need approval and{" "}
+                {data.leaves.pending} time off request{data.leaves.pending === 1 ? "" : "s"} need approval and{" "}
                 {data.attendance.late} employee{data.attendance.late === 1 ? "" : "s"} checked in late today.
-             </p>
-           </div>
-         </div>
-       </CardBody>
-     </Card>
-   </div>
+              </p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
   );
 }
 
@@ -234,13 +256,13 @@ function EmployeeDashboard() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 4);
 
-  const typeName = (id: string) => leaveTypes.data?.find((t) => t._id === id)?.name ?? "Leave";
+  const typeName = (id: string) => leaveTypes.data?.find((t) => t._id === id)?.name ?? "Time Off";
 
   return (
     <div>
       <PageHeader
         title={`Welcome back, ${user?.name?.split(" ")[0] ?? "there"}`}
-        description="Here's a snapshot of your attendance and leave activity."
+        description="Here's a snapshot of your attendance and time off activity."
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -250,10 +272,10 @@ function EmployeeDashboard() {
             today.isLoading
               ? "…"
               : checkedIn
-                ? checkedOut
-                  ? "Checked out"
-                  : "Checked in"
-                : "Not checked in"
+              ? checkedOut
+                ? "Checked out"
+                : "Checked in"
+              : "Not checked in"
           }
           hint={
             todayRecord
@@ -264,16 +286,16 @@ function EmployeeDashboard() {
           tone="primary"
         />
         <StatCard
-          label="Available leave"
+          label="Available time off"
           value={`${formatNumber(totalAvailable)} days`}
           hint={`${formatNumber(totalUsed)} used of ${formatNumber(totalAllocated)} allocated`}
           icon={<Scale className="size-5" />}
           tone="green"
         />
         <StatCard
-          label="Leave types"
+          label="Time off types"
           value={formatNumber(leaveTypes.data?.length ?? 0)}
-          hint="Available to apply for"
+          hint="Available to request"
           icon={<Plane className="size-5" />}
           tone="sky"
         />
@@ -284,40 +306,40 @@ function EmployeeDashboard() {
           icon={<CalendarClock className="size-5" />}
           tone="amber"
         />
-     </div>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="My leave balances" subtitle="Allocated, used and remaining for this year" />
+          <CardHeader title="My time off balances" subtitle="Allocated, used and remaining for this year" />
           <CardBody>
             {balances.isLoading ? (
               <Spinner />
             ) : balances.data?.length === 0 ? (
-              <p className="py-6 text-center text-sm text-surface-400">
-                No leave balances allocated yet. Ask HR to set them up.
-             </p>
+              <p className="py-6 text-center text-sm text-[var(--text-muted)]">
+                No time off balances allocated yet. Ask your admin to set them up.
+              </p>
             ) : (
               <div className="space-y-3">
                 {(balances.data ?? []).map((b) => (
                   <div key={b._id}>
                     <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="font-medium text-surface-900">{typeName(b.leaveTypeId)}</span>
-                      <span className="text-surface-500">
-                        <span className="font-semibold text-surface-900">{b.available}</span> / {b.allocated} days
-                     </span>
-                   </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-surface-100">
+                      <span className="font-medium text-[var(--text-primary)]">{typeName(b.leaveTypeId)}</span>
+                      <span className="text-[var(--text-muted)]">
+                        <span className="font-semibold text-[var(--text-primary)]">{b.available}</span> / {b.allocated} days
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-hover)]">
                       <div
-                        className="h-full rounded-full bg-primary-500"
+                        className="h-full rounded-full bg-brand-500"
                         style={{ width: `${b.allocated > 0 ? (b.used / b.allocated) * 100 : 0}%` }}
                       />
-                   </div>
-                 </div>
+                    </div>
+                  </div>
                 ))}
-             </div>
+              </div>
             )}
-         </CardBody>
-       </Card>
+          </CardBody>
+        </Card>
 
         <Card>
           <CardHeader title="Upcoming holidays" subtitle="Next few days off on the calendar" />
@@ -325,54 +347,52 @@ function EmployeeDashboard() {
             {holidays.isLoading ? (
               <Spinner />
             ) : upcoming.length === 0 ? (
-              <p className="py-6 text-center text-sm text-surface-400">No upcoming holidays</p>
+              <p className="py-6 text-center text-sm text-[var(--text-muted)]">No upcoming holidays</p>
             ) : (
               <div className="space-y-2">
                 {upcoming.map((h) => (
                   <div
                     key={h._id}
-                    className="flex items-center gap-3 rounded-lg border border-surface-200 bg-surface-50/40 px-3 py-2.5"
+                    className="flex items-center gap-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-hover)]/50 px-3 py-2.5"
                   >
-                    <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+                    <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
                       <span className="text-sm font-bold leading-none">{format(parseISO(h.date), "d")}</span>
                       <span className="text-[10px] uppercase leading-none">{format(parseISO(h.date), "MMM")}</span>
-                   </div>
+                    </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-surface-900">{h.name}</p>
-                      <p className="text-xs text-surface-500">{formatDate(h.date)}</p>
-                   </div>
+                      <p className="truncate text-sm font-medium text-[var(--text-primary)]">{h.name}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{formatDate(h.date)}</p>
+                    </div>
                     {h.optional && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-sky-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800">
                         <Sparkles className="size-3" />
                         Optional
-                     </span>
+                      </span>
                     )}
-                 </div>
+                  </div>
                 ))}
-             </div>
+              </div>
             )}
-         </CardBody>
-       </Card>
-     </div>
+          </CardBody>
+        </Card>
+      </div>
 
       <Card className="mt-6">
         <CardBody>
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
               <TrendingUp className="size-5" />
-           </div>
+            </div>
             <div>
-              <p className="text-sm font-semibold text-surface-900">Your snapshot</p>
-              <p className="mt-1 text-sm text-surface-500">
-                You have {formatNumber(totalAvailable)} leave day{totalAvailable === 1 ? "" : "s"} remaining this year and{" "}
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Your snapshot</p>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                You have {formatNumber(totalAvailable)} time off day{totalAvailable === 1 ? "" : "s"} remaining this year and{" "}
                 {upcoming.length} upcoming holiday{upcoming.length === 1 ? "" : "s"} to look forward to.
-             </p>
-           </div>
-         </div>
-       </CardBody>
-     </Card>
-   </div>
+              </p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
   );
 }
-
-// End of dashboard page

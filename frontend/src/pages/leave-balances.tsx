@@ -17,7 +17,7 @@ import type { LeaveBalance } from "@/types";
 
 function balanceLabel(b: LeaveBalance): string {
   const lt = b.leaveType as { name?: string } | undefined;
-  return lt?.name ?? "Leave";
+  return lt?.name ?? "Time Off";
 }
 
 export default function LeaveBalancesPage() {
@@ -55,8 +55,8 @@ export default function LeaveBalancesPage() {
   return (
     <div>
       <PageHeader
-        title="Leave Balances"
-        description={isAdmin ? "View and manage leave allocations across the organization." : "Your allocated, used and remaining leave days."}
+        title="Time Off Balances"
+        description={isAdmin ? "View and manage time off allocations across the organization." : "Your allocated, used and remaining time off days."}
         actions={
           isAdmin ? (
             <Button onClick={() => setCreateOpen(true)}>
@@ -68,18 +68,18 @@ export default function LeaveBalancesPage() {
       />
 
       <Card>
-        <CardHeader title="My balances" subtitle={`Leave year ${year}`} />
+        <CardHeader title="My balances" subtitle={`Time off year ${year}`} />
         {mine.isLoading ? (
           <Spinner />
         ) : mine.isError ? (
           <ErrorState message={mine.error?.message ?? "Failed to load"} onRetry={() => mine.refetch()} />
         ) : mine.data?.length === 0 ? (
-          <EmptyState title="No balances allocated" description="Your leave balances will appear here once allocated by HR." />
+          <EmptyState title="No balances allocated" description="Your time off balances will appear here once allocated by your admin." />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Leave type</TH>
+                <TH>Time off type</TH>
                 <TH>Allocated</TH>
                 <TH>Used</TH>
                 <TH>Available</TH>
@@ -89,15 +89,15 @@ export default function LeaveBalancesPage() {
               {mine.data!.map((b) => (
                 <TR key={b._id}>
                   <TD>
-                    <div className="flex items-center gap-2 font-medium text-surface-900">
-                      <Scale className="size-4 text-surface-400" />
+                    <div className="flex items-center gap-2 font-medium text-[var(--text-primary)]">
+                      <Scale className="size-4 text-[var(--text-muted)]" />
                       {balanceLabel(b)}
                     </div>
                   </TD>
                   <TD>{b.allocated}</TD>
                   <TD>{b.used}</TD>
                   <TD>
-                    <span className={`font-semibold ${b.available <= 0 ? "text-red-600" : "text-emerald-600"}`}>
+                    <span className={`font-semibold ${b.available <= 0 ? "text-rose-600" : "text-emerald-600"}`}>
                       {b.available}
                     </span>
                   </TD>
@@ -110,19 +110,19 @@ export default function LeaveBalancesPage() {
 
       {isAdmin ? (
         <Card className="mt-6">
-          <CardHeader title="All allocations" subtitle="Every employee's balance across all leave types" />
+          <CardHeader title="All allocations" subtitle="Every employee's balance across all time off types" />
           {all.isLoading ? (
             <Spinner />
           ) : all.isError ? (
             <ErrorState message={all.error?.message ?? "Failed to load"} onRetry={() => all.refetch()} />
           ) : all.data?.items.length === 0 ? (
-            <EmptyState title="No allocations yet" description="Allocate the first leave balance to get started." />
+            <EmptyState title="No allocations yet" description="Allocate the first time off balance to get started." />
           ) : (
             <Table>
               <THead>
                 <TR>
                   <TH>Employee</TH>
-                  <TH>Leave type</TH>
+                  <TH>Time off type</TH>
                   <TH>Year</TH>
                   <TH>Allocated</TH>
                   <TH>Used</TH>
@@ -136,15 +136,15 @@ export default function LeaveBalancesPage() {
                   return (
                     <TR key={b._id}>
                       <TD>
-                        <p className="font-medium text-surface-900">{emp?.name ?? "—"}</p>
-                        <p className="text-xs text-surface-500">{emp?.employeeCode ?? ""}</p>
+                        <p className="font-medium text-[var(--text-primary)]">{emp?.name ?? "—"}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{emp?.employeeCode ?? ""}</p>
                       </TD>
                       <TD>{balanceLabel(b)}</TD>
                       <TD>{b.year}</TD>
                       <TD>{b.allocated}</TD>
                       <TD>{b.used}</TD>
                       <TD>
-                        <span className={`font-semibold ${b.available <= 0 ? "text-red-600" : "text-emerald-600"}`}>
+                        <span className={`font-semibold ${b.available <= 0 ? "text-rose-600" : "text-emerald-600"}`}>
                           {b.available}
                         </span>
                       </TD>
@@ -199,10 +199,10 @@ function EditAllocationForm({ target }: { target: LeaveBalance | null }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-surface-600">
+      <p className="text-sm text-[var(--text-secondary)]">
         Set the total allocated days for{" "}
-        <span className="font-semibold text-surface-900">{(target.employee as { name?: string })?.name ?? "this employee"}</span>{" "}
-        on <span className="font-semibold text-surface-900">{balanceLabel(target)}</span>. Used days will be preserved.
+        <span className="font-semibold text-[var(--text-primary)]">{(target.employee as { name?: string })?.name ?? "this employee"}</span>{" "}
+        on <span className="font-semibold text-[var(--text-primary)]">{balanceLabel(target)}</span>. Used days will be preserved.
       </p>
       <div>
         <Label>Allocated days</Label>
@@ -212,7 +212,7 @@ function EditAllocationForm({ target }: { target: LeaveBalance | null }) {
           value={allocated}
           onChange={(e) => setAllocated(Number(e.target.value))}
         />
-        <p className="mt-1 text-xs text-surface-500">
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
           Currently used: {target.used} · Available after save: {Math.max(allocated - target.used, 0)}
         </p>
       </div>
@@ -242,7 +242,7 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
   const mutation = useMutation({
     mutationFn: () => leaveBalanceApi.create({ employeeId, leaveTypeId, year, allocated }),
     onSuccess: () => {
-      toast("success", "Leave balance allocated.");
+      toast("success", "Time off balance allocated.");
       onClose();
       setEmployeeId("");
       setLeaveTypeId("");
@@ -251,14 +251,14 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
     },
     onError: (error) => {
       const msg = getErrorMessage(error);
-      toast("error", msg.includes("already exists") ? "This balance already exists for the employee, leave type and year." : msg);
+      toast("error", msg.includes("already exists") ? "This balance already exists for the employee, time off type and year." : msg);
     },
   });
 
   function handleSubmit() {
     const next: Record<string, string> = {};
     if (!employeeId) next.employeeId = "Select an employee";
-    if (!leaveTypeId) next.leaveTypeId = "Select a leave type";
+    if (!leaveTypeId) next.leaveTypeId = "Select a time off type";
     if (!allocated || allocated <= 0) next.allocated = "Enter a valid allocation";
     setErrors(next);
     if (Object.keys(next).length === 0) mutation.mutate();
@@ -268,7 +268,7 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
     <Modal
       open={open}
       onClose={onClose}
-      title="Allocate leave balance"
+      title="Allocate time off balance"
       size="md"
       footer={
         <>
@@ -295,9 +295,9 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
           <FieldError message={errors.employeeId} />
         </div>
         <div>
-          <Label>Leave type</Label>
+          <Label>Time off type</Label>
           <Select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)}>
-            <option value="">Select a leave type</option>
+            <option value="">Select a time off type</option>
             {leaveTypes.data?.map((lt) => (
               <option key={lt._id} value={lt._id}>
                 {lt.name} ({lt.annualQuota} days/year)

@@ -1,0 +1,28 @@
+$kind: http-request
+description: Requires HR or ADMIN role.
+url: "{{baseUrl}}/employees"
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "employeeCode": "EMP-1042",
+      "name": "Jayant Kaushik",
+      "email": "NlNF8GNvxX5dZL@iOghfdarMvwDkXXAOzILSGOeFVGy.cmlg",
+      "password": "stringstring",
+      "joiningDate": "1966-01-18",
+      "timezone": "Asia/Kolkata",
+      "role": "EMPLOYEE",
+      "managerId": "string",
+      "departmentId": "string"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Create an employee.resources/examples
+order: 3000

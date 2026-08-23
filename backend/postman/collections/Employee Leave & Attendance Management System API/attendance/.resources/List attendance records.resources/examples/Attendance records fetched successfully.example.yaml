@@ -1,0 +1,60 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/attendance?employeeId=string&status=LEAVE&from=2026-08-01&to=2026-08-31&page=1&limit=10"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    employeeId: string
+    status: LEAVE
+    from: 2026-08-01
+    to: 2026-08-31
+    page: "1"
+    limit: "10"
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Attendance records fetched successfully",
+        "data": [
+          {
+            "_id": "string",
+            "employeeId": "string",
+            "date": "2026-08-18",
+            "checkInAt": "2010-05-15T15:18:15.896Z",
+            "checkOutAt": "1974-05-22T22:42:46.420Z",
+            "status": "PRESENT",
+            "timezone": "Asia/Kolkata",
+            "createdAt": "2003-01-06T12:11:05.870Z",
+            "updatedAt": "1995-06-26T18:46:27.030Z"
+          },
+          {
+            "_id": "string",
+            "employeeId": "string",
+            "date": "2026-08-18",
+            "checkInAt": "1970-01-25T23:03:48.097Z",
+            "checkOutAt": "1998-08-11T05:52:44.460Z",
+            "status": "PRESENT",
+            "timezone": "Asia/Kolkata",
+            "createdAt": "2022-12-20T05:00:14.258Z",
+            "updatedAt": "1985-01-12T14:14:22.116Z"
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "limit": 10,
+          "total": 100,
+          "totalPages": 10
+        }
+      }
+order: 1000

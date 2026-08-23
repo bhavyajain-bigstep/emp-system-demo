@@ -2,8 +2,11 @@ import { Types } from "mongoose";
 import { Attendance, IAttendance } from "../models/attendance.model";
 import { LeaveRequest, ILeaveRequest } from "../models/leave-request.model";
 import { Employee } from "../models/employee.model";
+import { Holiday } from "../models/holiday.model";
 import { AppError } from "../errors/app-error";
 import { stringify } from "csv-stringify/sync";
+import { env } from "../config/env";
+import { getLocalDateString } from "../utils/timezone.util";
 
 export interface AttendanceReportFilter {
   startDate?: string;
@@ -298,8 +301,14 @@ export const getDashboardSummaryService = async (
 
   let targetEmployeeIds: Types.ObjectId[] | null = null;
   if (Object.keys(empFilter).length > 0) {
-    const matchedEmployees = await Employee.find(empFilter).select("_id");
+    const matchedEmployees = await Employee.find(empFilter).select("_id timezone");
     targetEmployeeIds = matchedEmployees.map((e) => e._id as Types.ObjectId);
+    
+    // Build timezone map for employees
+    const timezoneMap = new Map<string, string>();
+    matchedEmployees.forEach((e) => {
+      timezoneMap.set(e._id.toString(), e.timezone);
+    });
   }
 
   const employeeQuery: Record<string, any> = {};
@@ -317,28 +326,136 @@ export const getDashboardSummaryService = async (
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-  const [totalEmployees, activeEmployees, pendingLeaves, approvedThisMonth, attendanceToday] =
-    await Promise.all([
-      Employee.countDocuments(employeeQuery),
-      Employee.countDocuments({ ...employeeQuery, status: "ACTIVE" }),
-      LeaveRequest.countDocuments({ ...leaveQuery, status: "PENDING" }),
-      LeaveRequest.countDocuments({
-        ...leaveQuery,
-        status: "APPROVED",
-        approvedAt: { $gte: startOfMonth },
-      }),
-      Attendance.find({ ...attendanceQuery, date: { $gte: startOfDay, $lt: endOfDay } }).select(
-        "employeeId status"
-      ),
-    ]);
+  // Fetch employees to get their timezones
+  const employees = targetEmployeeIds !== null 
+    ? await Employee.find({ _id: { $in: targetEmployeeIds } }).select("_id timezone")
+    : await Employee.find(employeeQuery).select("_id timezone");
+  
+  const timezoneMap = new Map<string, string>();
+  employees.forEach((e) => timezoneMap.set(e._id.toString(), e.timezone));
+
+  // Determine today's date in each employee's timezone
+  const employeeDateMap = new Map<string, string>();
+  for (const [empId, tz] of timezoneMap.entries()) {
+    employeeDateMap.set(empId, getLocalDateString(now, tz));
+  }
+
+  // Get unique dates for today across all timezones
+  const todayDates = Array.from(new Set(employeeDateMap.values()));
+
+  // Check if today is a weekend or holiday for each date
+  const weekendDays = env.ATTENDANCE_WEEKEND_DAYS
+    ? env.ATTENDANCE_WEEKEND_DAYS.split(",").map(Number)
+    : [0, 6];
+
+  const isWeekend = (dateStr: string) => {
+    const dayOfWeek = new Date(Date.UTC(
+      Number(dateStr.slice(0, 4)),
+      Number(dateStr.slice(5, 7)) - 1,
+      Number(dateStr.slice(8, 10))
+    )).getUTCDay();
+    return weekendDays.includes(dayOfWeek);
+  };
+
+  // Fetch mandatory holidays for today's dates
+  const holidayQuery = {
+    date: { $in: todayDates.map(d => new Date(`${d}T00:00:00.000Z`)) },
+    optional: false,
+  };
+  const holidays = await Holiday.find(holidayQuery).select("date");
+  const holidayDates = new Set(holidays.map(h => getLocalDateString(h.date, "UTC")));
+
+  // Fetch approved leaves for today's dates
+  const leaveQueryToday = {
+    employeeId: { $in: targetEmployeeIds || [] },
+    status: "APPROVED",
+    fromDate: { $lte: new Date(todayDates[todayDates.length - 1] + "T23:59:59.999Z") },
+    toDate: { $gte: new Date(todayDates[0] + "T00:00:00.000Z") },
+  };
+  const approvedLeaves = await LeaveRequest.find(leaveQueryToday).select("employeeId fromDate toDate");
+  
+  // Build a set of employee IDs on leave for each date
+  const employeesOnLeave = new Map<string, Set<string>>(); // date -> Set of employeeIds
+  for (const leave of approvedLeaves) {
+    const from = getLocalDateString(new Date(leave.fromDate), "UTC");
+    const to = getLocalDateString(new Date(leave.toDate), "UTC");
+    // Simple iteration for date range (in practice, leaves are usually short)
+    let current = from;
+    while (current <= to) {
+      if (!employeesOnLeave.has(current)) {
+        employeesOnLeave.set(current, new Set());
+      }
+      employeesOnLeave.get(current)!.add(leave.employeeId.toString());
+      // Increment date
+      const date = new Date(`${current}T00:00:00.000Z`);
+      date.setUTCDate(date.getUTCDate() + 1);
+      current = getLocalDateString(date, "UTC");
+    }
+  }
+
+  // Fetch attendance for today
+  const attendanceToday = await Attendance.find({
+    ...attendanceQuery,
+    date: { $in: todayDates },
+  }).select("employeeId status");
+
+  // Calculate attendance breakdown
+  let present = 0;
+  let late = 0;
+  let halfDay = 0;
+  let leave = 0;
+  let notExpected = 0; // weekend, holiday, or on leave
+
+  const attendanceByEmp = new Map<string, typeof attendanceToday[0]>();
+  for (const a of attendanceToday) {
+    attendanceByEmp.set(a.employeeId.toString(), a);
+  }
+
+  for (const [empId, tz] of timezoneMap.entries()) {
+    const todayStr = employeeDateMap.get(empId)!;
+    
+    if (isWeekend(todayStr) || holidayDates.has(todayStr)) {
+      notExpected++;
+      continue;
+    }
+    
+    if (employeesOnLeave.get(todayStr)?.has(empId)) {
+      leave++;
+      continue;
+    }
+
+    const attendance = attendanceByEmp.get(empId);
+    if (attendance) {
+      if (attendance.status === "PRESENT") present++;
+      else if (attendance.status === "LATE") late++;
+      else if (attendance.status === "HALF_DAY") halfDay++;
+      else if (attendance.status === "LEAVE") leave++;
+    }
+  }
+
+  const totalEmployees = timezoneMap.size;
+  const absent = totalEmployees - present - late - halfDay - leave - notExpected;
 
   const attendanceBreakdown = {
-    present: attendanceToday.filter((a) => a.status === "PRESENT").length,
-    late: attendanceToday.filter((a) => a.status === "LATE").length,
-    absent: attendanceToday.filter((a) => a.status === "ABSENT").length,
-    halfDay: attendanceToday.filter((a) => a.status === "HALF_DAY").length,
-    total: attendanceToday.length,
+    present,
+    late,
+    absent: Math.max(absent, 0),
+    halfDay,
+    leave,
+    notExpected,
+    total: totalEmployees,
   };
+
+  const [totalEmployeesCount, activeEmployees, pendingLeaves, approvedThisMonth] = await Promise.all([
+    Employee.countDocuments(employeeQuery),
+    Employee.countDocuments({ ...employeeQuery, status: "ACTIVE" }),
+    LeaveRequest.countDocuments({ ...leaveQuery, status: "PENDING" }),
+    LeaveRequest.countDocuments({
+      ...leaveQuery,
+      status: "APPROVED",
+      approvedAt: { $gte: startOfMonth },
+    }),
+  ]);
 
   const leavesByType = await LeaveRequest.aggregate([
     { $match: leaveQuery },
@@ -348,9 +465,9 @@ export const getDashboardSummaryService = async (
   return {
     asOf: now,
     employees: {
-      total: totalEmployees,
+      total: totalEmployeesCount,
       active: activeEmployees,
-      inactive: totalEmployees - activeEmployees,
+      inactive: totalEmployeesCount - activeEmployees,
     },
     leaves: {
       pending: pendingLeaves,

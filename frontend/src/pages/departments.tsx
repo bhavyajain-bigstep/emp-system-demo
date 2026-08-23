@@ -80,20 +80,20 @@ export default function DepartmentsPage() {
                   <TR key={d._id}>
                     <TD>
                       <div className="flex items-center gap-3">
-                        <div className="flex size-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
                           <Building2 className="size-4" />
                         </div>
-                        <p className="font-medium text-surface-900">{d.name}</p>
+                        <p className="font-medium text-[var(--text-primary)]">{d.name}</p>
                       </div>
                     </TD>
                     <TD>
-                      <span className="flex items-center gap-1.5 text-surface-600">
-                        <Users className="size-4 text-surface-400" />
+                      <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                        <Users className="size-4 text-[var(--text-muted)]" />
                         {managerName(d.managerId) ?? "No manager"}
                       </span>
                     </TD>
                     <TD>
-                      <Badge className={d.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-surface-100 text-surface-500 ring-surface-200"}>
+                      <Badge className={d.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800" : "bg-[var(--bg-hover)] text-[var(--text-muted)] ring-[var(--border-primary)]"}>
                         {d.status}
                       </Badge>
                     </TD>
@@ -106,7 +106,7 @@ export default function DepartmentsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="text-rose-600 hover:bg-rose-50"
                             onClick={() => setArchiveTarget(d)}
                           >
                             <Archive className="size-4" />
@@ -232,7 +232,7 @@ function DepartmentFormModal({
               </option>
             ))}
           </Select>
-          <p className="mt-1 text-xs text-surface-500">Managers can approve leave requests for this department's employees.</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">Managers can approve time off requests for this department's employees.</p>
         </div>
       </div>
     </Modal>

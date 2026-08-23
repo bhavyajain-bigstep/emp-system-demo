@@ -11,6 +11,8 @@ import {
   updateBalance,
 } from "../repositories/leave-balance.repository";
 
+import { findActiveEmployees } from "../repositories/employee.repository";
+import { findActiveLeaveTypes } from "../repositories/leave-type.repository";
 import { Employee } from "../models/employee.model";
 import { LeaveType } from "../models/leave-type.model";
 import { logAuditEvent } from "./audit-log.service";
@@ -267,3 +269,133 @@ export const updateLeaveBalanceService =
 
     return updated;
   };
+
+export const createBalancesForEmployee = async (
+  employeeId: string,
+  actorId?: string
+) => {
+  if (!Types.ObjectId.isValid(employeeId)) {
+    throw new AppError(
+      "Invalid employee ID",
+      400,
+      "INVALID_EMPLOYEE_ID"
+    );
+  }
+
+  const employee = await Employee.findById(employeeId);
+
+  if (!employee) {
+    throw new AppError(
+      "Employee not found",
+      404,
+      "EMPLOYEE_NOT_FOUND"
+    );
+  }
+
+  const activeLeaveTypes = await findActiveLeaveTypes();
+  const year = new Date().getFullYear();
+  const createdBalances = [];
+
+  for (const leaveType of activeLeaveTypes) {
+    const existing = await findBalance(
+      employeeId,
+      leaveType._id.toString(),
+      year
+    );
+
+    if (!existing) {
+      const newBalance = await createBalance({
+        employeeId: new Types.ObjectId(employeeId),
+        leaveTypeId: leaveType._id,
+        year,
+        allocated: leaveType.annualQuota,
+        used: 0,
+        available: leaveType.annualQuota,
+      });
+
+      await logAuditEvent({
+        actorId,
+        action: "LEAVE_BALANCE_AUTO_CREATED",
+        entityType: "LEAVE_BALANCE",
+        entityId: newBalance._id.toString(),
+        newValue: newBalance,
+        metadata: {
+          employeeId,
+          leaveTypeId: leaveType._id.toString(),
+          year,
+          allocated: leaveType.annualQuota,
+          reason: "Auto-created for new employee",
+        },
+      });
+
+      createdBalances.push(newBalance);
+    }
+  }
+
+  return createdBalances;
+};
+
+export const createBalancesForLeaveType = async (
+  leaveTypeId: string,
+  actorId?: string
+) => {
+  if (!Types.ObjectId.isValid(leaveTypeId)) {
+    throw new AppError(
+      "Invalid leave type ID",
+      400,
+      "INVALID_LEAVE_TYPE_ID"
+    );
+  }
+
+  const leaveType = await LeaveType.findById(leaveTypeId);
+
+  if (!leaveType) {
+    throw new AppError(
+      "Leave type not found",
+      404,
+      "LEAVE_TYPE_NOT_FOUND"
+    );
+  }
+
+  const activeEmployees = await findActiveEmployees();
+  const year = new Date().getFullYear();
+  const createdBalances = [];
+
+  for (const employee of activeEmployees) {
+    const existing = await findBalance(
+      employee._id.toString(),
+      leaveTypeId,
+      year
+    );
+
+    if (!existing) {
+      const newBalance = await createBalance({
+        employeeId: employee._id,
+        leaveTypeId: new Types.ObjectId(leaveTypeId),
+        year,
+        allocated: leaveType.annualQuota,
+        used: 0,
+        available: leaveType.annualQuota,
+      });
+
+      await logAuditEvent({
+        actorId,
+        action: "LEAVE_BALANCE_AUTO_CREATED",
+        entityType: "LEAVE_BALANCE",
+        entityId: newBalance._id.toString(),
+        newValue: newBalance,
+        metadata: {
+          employeeId: employee._id.toString(),
+          leaveTypeId,
+          year,
+          allocated: leaveType.annualQuota,
+          reason: "Auto-created for new leave type",
+        },
+      });
+
+      createdBalances.push(newBalance);
+    }
+  }
+
+  return createdBalances;
+};

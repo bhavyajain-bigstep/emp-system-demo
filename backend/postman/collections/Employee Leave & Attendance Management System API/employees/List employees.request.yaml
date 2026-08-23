@@ -1,0 +1,18 @@
+$kind: http-request
+description: Requires HR or ADMIN role.
+url: "{{baseUrl}}/employees?page=1&limit=10&departmentId=string&status=INACTIVE"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  page: "1"
+  limit: "10"
+  departmentId: string
+  status: INACTIVE
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/List employees.resources/examples
+order: 2000

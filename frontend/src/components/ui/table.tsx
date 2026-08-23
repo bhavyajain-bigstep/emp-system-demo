@@ -12,7 +12,7 @@ export function Table({ className, ...props }: TableHTMLAttributes<HTMLTableElem
 
 export function THead({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <thead className={cn("bg-surface-50 text-left text-xs uppercase tracking-wide text-surface-500", className)}>
+    <thead className={cn("bg-[var(--bg-tertiary)] text-left text-xs uppercase tracking-wide text-[var(--text-muted)]", className)}>
       {children}
     </thead>
   );
@@ -23,7 +23,7 @@ export function TH({ children, className }: { children?: ReactNode; className?: 
 }
 
 export function TBody({ children, className }: { children: ReactNode; className?: string }) {
-  return <tbody className={cn("divide-y divide-surface-100", className)}>{children}</tbody>;
+  return <tbody className={cn("divide-y divide-[var(--border-primary)]", className)}>{children}</tbody>;
 }
 
 export function TR({
@@ -37,7 +37,7 @@ export function TR({
 }) {
   return (
     <tr
-      className={cn("transition hover:bg-surface-50/60", onClick && "cursor-pointer", className)}
+      className={cn("transition-colors hover:bg-[var(--bg-hover)]/50", onClick && "cursor-pointer", className)}
       onClick={onClick}
     >
       {children}
@@ -46,5 +46,5 @@ export function TR({
 }
 
 export function TD({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={cn("px-4 py-3 align-middle text-surface-700", className)}>{children}</td>;
+  return <td className={cn("px-4 py-3 align-middle text-[var(--text-primary)]", className)}>{children}</td>;
 }

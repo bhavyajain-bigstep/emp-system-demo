@@ -1,0 +1,24 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/reports/leaves?employeeId=string&departmentId=string&leaveTypeId=string&status=CANCELLED&from=string&to=string&page=1&limit=20"
+  method: GET
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    employeeId: string
+    departmentId: string
+    leaveTypeId: string
+    status: CANCELLED
+    from: string
+    to: string
+    page: "1"
+    limit: "20"
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: ""
+order: 1000

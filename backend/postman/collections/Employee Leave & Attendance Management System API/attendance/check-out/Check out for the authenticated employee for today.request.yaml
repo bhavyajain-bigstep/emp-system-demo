@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{baseUrl}}/attendance/check-out"
+method: POST
+headers:
+  Accept: application/json
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Check out for the authenticated employee for today.resources/examples
+order: 1000

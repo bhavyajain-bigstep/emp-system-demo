@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/reports/leaves/export?employeeId=string&departmentId=string&leaveTypeId=string&status=string&from=string&to=string"
+method: GET
+headers:
+  Accept: text/csv
+queryParams:
+  employeeId: string
+  departmentId: string
+  leaveTypeId: string
+  status: string
+  from: string
+  to: string
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Export leave report as CSV.resources/examples
+order: 1000

@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/refresh"
+method: POST
+settings: {}
+examples: ./.resources/Refresh access token using httpOnly cookie.resources/examples
+order: 1000

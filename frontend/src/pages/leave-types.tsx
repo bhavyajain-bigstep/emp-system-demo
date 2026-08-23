@@ -50,15 +50,15 @@ function RuleToggle({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex items-start justify-between gap-4 rounded-lg border border-surface-200 bg-white px-4 py-3 text-left transition hover:border-primary-200 hover:bg-primary-50/40"
+      className="flex items-start justify-between gap-4 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-surface)] px-4 py-3 text-left transition hover:border-brand-200 dark:hover:border-brand-800 hover:bg-[var(--bg-hover)]"
     >
       <span>
-        <span className="block text-sm font-medium text-surface-900">{label}</span>
-        <span className="block text-xs text-surface-500">{hint}</span>
+        <span className="block text-sm font-medium text-[var(--text-primary)]">{label}</span>
+        <span className="block text-xs text-[var(--text-muted)]">{hint}</span>
       </span>
       <span
         className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${
-          checked ? "bg-primary-600" : "bg-surface-300"
+          checked ? "bg-brand-600" : "bg-[var(--border-secondary)]"
         }`}
       >
         <span
@@ -85,7 +85,7 @@ export default function LeaveTypesPage() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) => leaveTypeApi.update(id, { status }),
     onSuccess: () => {
-      toast("success", "Leave type status updated.");
+      toast("success", "Time off type status updated.");
       queryClient.invalidateQueries({ queryKey: ["leave-types"] });
     },
     onError: (error) => toast("error", getErrorMessage(error)),
@@ -94,12 +94,12 @@ export default function LeaveTypesPage() {
   return (
     <div>
       <PageHeader
-        title="Leave Types"
-        description="Define the leave categories and their policies."
+        title="Time Off Types"
+        description="Define the time off categories and their policies."
         actions={
           <Button onClick={() => setFormOpen(true)}>
             <Plus className="size-4" />
-            New leave type
+            New time off type
           </Button>
         }
       />
@@ -111,12 +111,12 @@ export default function LeaveTypesPage() {
           ) : leaveTypes.isError ? (
             <ErrorState message={leaveTypes.error?.message ?? "Failed to load"} onRetry={() => leaveTypes.refetch()} />
           ) : leaveTypes.data?.length === 0 ? (
-            <EmptyState title="No leave types" description="Create leave types so employees can start requesting leave." />
+            <EmptyState title="No time off types" description="Create time off types so employees can start requesting time off." />
           ) : (
             <Table>
               <THead>
                 <TR>
-                  <TH>Leave type</TH>
+                  <TH>Time off type</TH>
                   <TH>Code</TH>
                   <TH>Annual quota</TH>
                   <TH>Policy</TH>
@@ -129,17 +129,17 @@ export default function LeaveTypesPage() {
                   <TR key={lt._id}>
                     <TD>
                       <div className="flex items-center gap-3">
-                        <div className="flex size-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
                           <CalendarDays className="size-4" />
                         </div>
-                        <p className="font-medium text-surface-900">{lt.name}</p>
+                        <p className="font-medium text-[var(--text-primary)]">{lt.name}</p>
                       </div>
                     </TD>
                     <TD>
-                      <Badge className="bg-surface-100 font-mono text-surface-600 ring-surface-200">{lt.code}</Badge>
+                      <Badge tone="slate" className="font-mono">{lt.code}</Badge>
                     </TD>
-                    <TD className="font-semibold text-surface-900">{lt.annualQuota} days</TD>
-                    <TD className="text-xs text-surface-500">
+                    <TD className="font-semibold text-[var(--text-primary)]">{lt.annualQuota} days</TD>
+                    <TD className="text-xs text-[var(--text-muted)]">
                       <p>
                         Max {lt.rules.maxConsecutiveDays} days · {lt.rules.minNoticeDays}-day notice
                       </p>
@@ -149,7 +149,7 @@ export default function LeaveTypesPage() {
                       </p>
                     </TD>
                     <TD>
-                      <Badge className={lt.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-surface-100 text-surface-500 ring-surface-200"}>
+                      <Badge className={lt.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800" : "bg-[var(--bg-hover)] text-[var(--text-muted)] ring-[var(--border-primary)]"}>
                         {lt.status}
                       </Badge>
                     </TD>
@@ -162,7 +162,7 @@ export default function LeaveTypesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={lt.status === "ACTIVE" ? "text-red-600 hover:bg-red-50" : "text-emerald-600 hover:bg-emerald-50"}
+                          className={lt.status === "ACTIVE" ? "text-rose-600 hover:bg-rose-50" : "text-emerald-600 hover:bg-emerald-50"}
                           onClick={() => statusMutation.mutate({ id: lt._id, status: lt.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })}
                         >
                           {lt.status === "ACTIVE" ? "Deactivate" : "Activate"}
@@ -232,13 +232,13 @@ function LeaveTypeFormModal({
       return isEdit ? leaveTypeApi.update(leaveType!._id, payload) : leaveTypeApi.create(payload);
     },
     onSuccess: () => {
-      toast("success", isEdit ? "Leave type updated." : "Leave type created.");
+      toast("success", isEdit ? "Time off type updated." : "Time off type created.");
       onClose();
       queryClient.invalidateQueries({ queryKey: ["leave-types"] });
     },
     onError: (error) => {
       const msg = getErrorMessage(error);
-      if (msg.includes("exists")) toast("error", "A leave type with this code already exists.");
+      if (msg.includes("exists")) toast("error", "A time off type with this code already exists.");
       else toast("error", msg);
     },
   });
@@ -260,7 +260,7 @@ function LeaveTypeFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? "Edit leave type" : "New leave type"}
+      title={isEdit ? "Edit time off type" : "New time off type"}
       size="lg"
       footer={
         <>
@@ -268,7 +268,7 @@ function LeaveTypeFormModal({
             Cancel
           </Button>
           <Button onClick={handleSubmit} loading={mutation.isPending}>
-            {isEdit ? "Save changes" : "Create leave type"}
+            {isEdit ? "Save changes" : "Create time off type"}
           </Button>
         </>
       }
@@ -293,7 +293,7 @@ function LeaveTypeFormModal({
         </div>
 
         <div>
-          <p className="mb-2 text-sm font-medium text-surface-900">Policies</p>
+          <p className="mb-2 text-sm font-medium text-[var(--text-primary)]">Policies</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <RuleToggle
               label="Exclude weekends"
@@ -308,7 +308,7 @@ function LeaveTypeFormModal({
               onChange={(v) => setRule("excludeMandatoryHolidays", v)}
             />
             <RuleToggle
-              label="Allow half-day leave"
+              label="Allow half-day time off"
               hint="Employees may apply for a single half day"
               checked={rules.allowHalfDay}
               onChange={(v) => setRule("allowHalfDay", v)}
@@ -325,7 +325,7 @@ function LeaveTypeFormModal({
               checked={rules.allowNegativeBalance}
               onChange={(v) => setRule("allowNegativeBalance", v)}
             />
-            <div className="grid grid-cols-2 gap-3 rounded-lg border border-surface-200 bg-surface-50/60 px-4 py-3">
+            <div className="grid grid-cols-2 gap-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-hover)]/60 px-4 py-3">
               <div>
                 <Label>Max consecutive days</Label>
                 <Input type="number" min={1} value={rules.maxConsecutiveDays} onChange={(e) => setRule("maxConsecutiveDays", Number(e.target.value))} />

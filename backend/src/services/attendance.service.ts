@@ -4,6 +4,7 @@ import { AppError } from "../errors/app-error";
 import { env } from "../config/env";
 import { findEmployeeById } from "../repositories/employee.repository";
 import { Holiday } from "../models/holiday.model";
+import { LeaveRequest } from "../models/leave-request.model";
 import {
   createAttendance,
   findAttendanceByEmployeeAndDate,
@@ -35,11 +36,43 @@ const assertValidEmployee = async (employeeId: string) => {
   return employee;
 };
 
+const isWorkingDay = async (dateStr: string, timezone: string): Promise<{ isWorking: boolean; reason?: string }> => {
+  const dayOfWeek = new Date(Date.UTC(
+    Number(dateStr.slice(0, 4)),
+    Number(dateStr.slice(5, 7)) - 1,
+    Number(dateStr.slice(8, 10))
+  )).getUTCDay();
+
+  if (WEEKEND_DAYS.includes(dayOfWeek)) {
+    return { isWorking: false, reason: "weekend" };
+  }
+
+  const holiday = await Holiday.findOne({
+    date: new Date(`${dateStr}T00:00:00.000Z`),
+    optional: false,
+  });
+
+  if (holiday) {
+    return { isWorking: false, reason: "holiday" };
+  }
+
+  return { isWorking: true };
+};
+
 export const checkInService = async (employeeId: string) => {
   const employee = await assertValidEmployee(employeeId);
 
   const now = new Date();
   const localDate = getLocalDateString(now, employee.timezone);
+
+  const workingDayCheck = await isWorkingDay(localDate, employee.timezone);
+  if (!workingDayCheck.isWorking) {
+    throw new AppError(
+      `Cannot check in on a ${workingDayCheck.reason}`,
+      400,
+      "NOT_A_WORKING_DAY"
+    );
+  }
 
   const existing = await findAttendanceByEmployeeAndDate(
     employeeId,
@@ -185,8 +218,31 @@ export const getMonthlyAttendanceSummaryService = async (
     getLocalDateString(h.date, employee.timezone)
   );
 
+  // Fetch approved leaves for this month
+  const approvedLeaves = await LeaveRequest.find({
+    employeeId: employee._id,
+    status: "APPROVED",
+    fromDate: { $lte: endQueryDate },
+    toDate: { $gte: startQueryDate },
+  }).select("fromDate toDate");
+
+  // Build a set of dates the employee is on leave
+  const leaveDates = new Set<string>();
+  for (const leave of approvedLeaves) {
+    const from = getLocalDateString(new Date(leave.fromDate), employee.timezone);
+    const to = getLocalDateString(new Date(leave.toDate), employee.timezone);
+    let current = from;
+    while (current <= to) {
+      leaveDates.add(current);
+      const date = new Date(`${current}T00:00:00.000Z`);
+      date.setUTCDate(date.getUTCDate() + 1);
+      current = getLocalDateString(date, "UTC");
+    }
+  }
+
   let weekends = 0;
   let holidayCount = 0;
+  let leaveCount = 0;
   let totalWorkingDays = 0;
 
   for (let day = 1; day <= lastDay; day++) {
@@ -196,11 +252,14 @@ export const getMonthlyAttendanceSummaryService = async (
 
     const isWeekend = isWeekendDay(dateStr, WEEKEND_DAYS);
     const isHoliday = holidayDateStrings.includes(dateStr);
+    const isOnLeave = leaveDates.has(dateStr);
 
     if (isWeekend) {
       weekends++;
     } else if (isHoliday) {
       holidayCount++;
+    } else if (isOnLeave) {
+      leaveCount++;
     } else {
       totalWorkingDays++;
     }
@@ -221,6 +280,8 @@ export const getMonthlyAttendanceSummaryService = async (
     else if (record.status === "LEAVE") counts.leaveDays++;
   }
 
+  // Leave days from attendance records should match the leave dates
+  // But we also count leave days from approved leaves that don't have attendance records
   const accountedDays =
     counts.presentDays + counts.lateDays + counts.halfDays + counts.leaveDays;
 
@@ -243,7 +304,7 @@ export const getMonthlyAttendanceSummaryService = async (
     presentDays: counts.presentDays,
     lateDays: counts.lateDays,
     halfDays: counts.halfDays,
-    leaveDays: counts.leaveDays,
+    leaveDays: counts.leaveDays + leaveCount,
     absentDays: counts.absentDays,
     holidays: holidayCount,
     weekends,

@@ -1,0 +1,35 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/departments"
+  method: POST
+  headers:
+    Content-Type: application/json
+    Accept: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "name": "Engineering",
+        "managerId": "string"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Department created successfully",
+        "data": {
+          "_id": "string",
+          "name": "Engineering",
+          "managerId": "string",
+          "status": "ACTIVE",
+          "createdAt": "1988-03-12T14:54:48.308Z",
+          "updatedAt": "1949-02-25T12:02:23.069Z"
+        }
+      }
+order: 1000

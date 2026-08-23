@@ -1,0 +1,39 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/employees/:id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: string
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Employee fetched successfully",
+        "data": {
+          "_id": "6612abf4c1a2b3d4e5f6a7b8",
+          "employeeCode": "EMP-1042",
+          "name": "Jayant Kaushik",
+          "email": "jayant@example.com",
+          "role": "EMPLOYEE",
+          "managerId": "string",
+          "departmentId": "string",
+          "joiningDate": "1999-03-12T03:17:51.306Z",
+          "status": "ACTIVE",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "2013-05-03T16:45:52.997Z",
+          "updatedAt": "1956-12-25T02:28:26.241Z"
+        }
+      }
+order: 1000

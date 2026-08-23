@@ -1,0 +1,15 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/attendance/check-out"
+  method: POST
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+response:
+  statusCode: 404
+  statusText: Not Found
+  body:
+    type: text
+    content: ""
+order: 3000

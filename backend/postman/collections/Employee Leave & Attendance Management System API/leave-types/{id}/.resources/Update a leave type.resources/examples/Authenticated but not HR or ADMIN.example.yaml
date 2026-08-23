@@ -1,0 +1,41 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/leave-types/:id"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: string
+  body:
+    type: json
+    content: |-
+      {
+        "name": "Casual Leave",
+        "code": "CL",
+        "description": "Leave for personal or casual purposes",
+        "maxDays": 15,
+        "isPaid": true,
+        "carryForward": true
+      }
+response:
+  statusCode: 403
+  statusText: Forbidden
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "Something went wrong",
+        "error": {
+          "code": "SOME_ERROR_CODE"
+        }
+      }
+order: 4000

@@ -1,0 +1,15 @@
+$kind: http-request
+description: Requires HR or ADMIN role.
+url: "{{baseUrl}}/leave-types/:id"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  id: string
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get a single leave type.resources/examples
+order: 1000

@@ -1,0 +1,17 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/audit-logs/:id"
+  method: GET
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: string
+response:
+  statusCode: 403
+  statusText: Forbidden
+  body:
+    type: text
+    content: ""
+order: 3000

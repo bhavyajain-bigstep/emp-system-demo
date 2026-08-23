@@ -23,7 +23,7 @@ function employeeLabel(req: LeaveRequest): { name: string; code: string } {
 
 function leaveTypeLabel(req: LeaveRequest): string {
   const lt = req.leaveTypeId as { name?: string } | string;
-  return typeof lt === "string" ? "Leave" : lt?.name ?? "Leave";
+  return typeof lt === "string" ? "Time Off" : lt?.name ?? "Time Off";
 }
 
 export default function LeaveApprovalsPage() {
@@ -44,7 +44,7 @@ export default function LeaveApprovalsPage() {
   const approveMutation = useMutation({
     mutationFn: (id: string) => leaveApi.approve(id),
     onSuccess: () => {
-      toast("success", "Leave request approved. Balance updated.");
+      toast("success", "Time off request approved. Balance updated.");
       invalidate();
     },
     onError: (error) => toast("error", getErrorMessage(error)),
@@ -53,7 +53,7 @@ export default function LeaveApprovalsPage() {
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => leaveApi.reject(id, reason),
     onSuccess: () => {
-      toast("success", "Leave request rejected.");
+      toast("success", "Time off request rejected.");
       setRejectTarget(null);
       invalidate();
     },
@@ -63,8 +63,8 @@ export default function LeaveApprovalsPage() {
   return (
     <div>
       <PageHeader
-        title="Leave Approvals"
-        description="Review and respond to pending leave requests from your team."
+        title="Time Off Approvals"
+        description="Review and respond to pending time off requests from your team."
       />
 
       <Card>
@@ -74,13 +74,13 @@ export default function LeaveApprovalsPage() {
         ) : pending.isError ? (
           <ErrorState message={pending.error?.message ?? "Failed to load"} onRetry={() => pending.refetch()} />
         ) : pending.data?.length === 0 ? (
-          <EmptyState title="No pending requests" description="You're all caught up. No leave requests await approval." />
+          <EmptyState title="No pending requests" description="You're all caught up. No time off requests await approval." />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Employee</TH>
-                <TH>Leave type</TH>
+                <TH>Type</TH>
                 <TH>From</TH>
                 <TH>To</TH>
                 <TH>Days</TH>
@@ -94,15 +94,15 @@ export default function LeaveApprovalsPage() {
                 return (
                   <TR key={req._id}>
                     <TD>
-                      <p className="font-medium text-surface-900">{emp.name}</p>
-                      <p className="text-xs text-surface-500">{emp.code}</p>
+                      <p className="font-medium text-[var(--text-primary)]">{emp.name}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{emp.code}</p>
                     </TD>
                     <TD>{leaveTypeLabel(req)}</TD>
                     <TD>{formatDate(req.fromDate)}</TD>
                     <TD>{formatDate(req.toDate)}</TD>
                     <TD>{req.days}</TD>
                     <TD className="max-w-56">
-                      <p className="truncate text-surface-600" title={req.reason}>
+                      <p className="truncate text-[var(--text-secondary)]" title={req.reason}>
                         {req.reason}
                       </p>
                     </TD>
@@ -118,7 +118,7 @@ export default function LeaveApprovalsPage() {
                           <Check className="size-4" />
                           Approve
                         </Button>
-                        <Button variant="outline" size="sm" className="border-red-200 text-red-700 hover:bg-red-50" onClick={() => setRejectTarget(req)}>
+                        <Button variant="outline" size="sm" className="border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setRejectTarget(req)}>
                           <X className="size-4" />
                           Reject
                         </Button>
@@ -159,7 +159,7 @@ function RejectModal({
     <Modal
       open={Boolean(request)}
       onClose={onClose}
-      title="Reject leave request"
+      title="Reject time off request"
       size="md"
       footer={
         <>
@@ -174,9 +174,9 @@ function RejectModal({
     >
       {request ? (
         <div className="space-y-4">
-          <div className="rounded-lg bg-surface-50 p-4 text-sm text-surface-600">
+          <div className="rounded-lg bg-[var(--bg-hover)] p-4 text-sm text-[var(--text-secondary)]">
             <p>
-              <span className="font-semibold text-surface-900">{employeeLabel(request).name}</span> ·{" "}
+              <span className="font-semibold text-[var(--text-primary)]">{employeeLabel(request).name}</span> ·{" "}
               {leaveTypeLabel(request)} · {formatDate(request.fromDate)} → {formatDate(request.toDate)} (
               {request.days} day{request.days === 1 ? "" : "s"})
             </p>

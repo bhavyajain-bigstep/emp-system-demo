@@ -1,0 +1,33 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/departments/:id"
+  method: PATCH
+  headers:
+    Content-Type: application/json
+    Accept: application/json
+  pathVariables:
+    id: string
+  body:
+    type: json
+    content: |-
+      {
+        "name": "string",
+        "managerId": "string",
+        "status": "ARCHIVED"
+      }
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "Something went wrong",
+        "error": {
+          "code": "SOME_ERROR_CODE"
+        }
+      }
+order: 3000

@@ -4,9 +4,10 @@ import {
 } from "../models/employee.model";
 
 export const findEmployeeById = async (
-  id: string
+  id: string,
+  includeRefreshTokenHash: boolean = false
 ): Promise<IEmployee | null> => {
-  return Employee.findById(id)
+  const query = Employee.findById(id)
     .populate(
       "managerId",
       "name employeeCode email"
@@ -15,6 +16,12 @@ export const findEmployeeById = async (
       "departmentId",
       "name"
     );
+
+  if (includeRefreshTokenHash) {
+    query.select("+refreshTokenHash");
+  }
+
+  return query;
 };
 
 export const findEmployeeByEmail = async (
@@ -96,6 +103,10 @@ export const updateEmployee = async (
       "departmentId",
       "name"
     );
+};
+
+export const findActiveEmployees = async (): Promise<IEmployee[]> => {
+  return Employee.find({ status: "ACTIVE" }).select("_id");
 };
 
 export const countActiveEmployeesInDepartment = async (

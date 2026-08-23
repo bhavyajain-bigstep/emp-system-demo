@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{baseUrl}}/departments/:id"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  id: string
+settings: {}
+examples: ./.resources/Get a single department.resources/examples
+order: 1000

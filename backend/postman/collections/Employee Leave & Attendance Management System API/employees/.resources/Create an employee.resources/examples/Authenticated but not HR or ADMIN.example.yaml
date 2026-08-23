@@ -1,0 +1,42 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/employees"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "employeeCode": "EMP-1042",
+        "name": "Jayant Kaushik",
+        "email": "NlNF8GNvxX5dZL@iOghfdarMvwDkXXAOzILSGOeFVGy.cmlg",
+        "password": "stringstring",
+        "joiningDate": "1966-01-18",
+        "timezone": "Asia/Kolkata",
+        "role": "EMPLOYEE",
+        "managerId": "string",
+        "departmentId": "string"
+      }
+response:
+  statusCode: 403
+  statusText: Forbidden
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "Something went wrong",
+        "error": {
+          "code": "SOME_ERROR_CODE"
+        }
+      }
+order: 4000

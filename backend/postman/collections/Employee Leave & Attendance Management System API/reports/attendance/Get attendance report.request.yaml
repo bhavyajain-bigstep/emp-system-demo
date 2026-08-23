@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{baseUrl}}/reports/attendance?employeeId=string&departmentId=string&status=LEAVE&from=2026-08-01&to=2026-08-31&page=1&limit=20"
+method: GET
+queryParams:
+  employeeId: string
+  departmentId: string
+  status: LEAVE
+  from: 2026-08-01
+  to: 2026-08-31
+  page: "1"
+  limit: "20"
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get attendance report.resources/examples
+order: 2000

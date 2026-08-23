@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/attendance/summary?employeeId=string&year=2026&month=8"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: employeeId
+    value: string
+    description: Optional for Managers/HR to view team/employee summary. Defaults to authenticated employee.
+  - key: year
+    value: "2026"
+  - key: month
+    value: "8"
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get monthly attendance summary.resources/examples
+order: 1000

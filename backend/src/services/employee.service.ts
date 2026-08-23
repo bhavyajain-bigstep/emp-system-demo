@@ -10,12 +10,14 @@ import {
   findEmployeeById,
   findEmployees,
   updateEmployee,
+  findActiveEmployees,
 } from "../repositories/employee.repository";
 import { findDepartmentById } from "../repositories/department.repository";
 import { Employee } from "../models/employee.model";
 
 import { AppError } from "../errors/app-error";
 import { logAuditEvent } from "./audit-log.service";
+import { createBalancesForEmployee } from "./leave-balance.service";
 
 interface CreateEmployeeInput {
   employeeCode: string;
@@ -179,6 +181,8 @@ export const createEmployeeService = async (
       role: employee.role,
     },
   });
+
+  await createBalancesForEmployee(employee._id.toString(), data.actorId);
 
   // Re-fetch so the response is consistent with other endpoints
   // (excludes the hidden passwordHash field and populates refs).

@@ -27,14 +27,14 @@ let nextId = 0;
 
 const ICONS: Record<ToastKind, ReactNode> = {
   success: <CheckCircle2 className="size-5 text-emerald-500" />,
-  error: <AlertTriangle className="size-5 text-red-500" />,
-  info: <Info className="size-5 text-sky-500" />,
+  error: <AlertTriangle className="size-5 text-rose-500" />,
+  info: <Info className="size-5 text-primary-500" />,
 };
 
 const STYLES: Record<ToastKind, string> = {
-  success: "border-emerald-200 bg-white",
-  error: "border-red-200 bg-white",
-  info: "border-sky-200 bg-white",
+  success: "border-[var(--success-border)] bg-[var(--bg-card)]",
+  error: "border-[var(--error-border)] bg-[var(--bg-card)]",
+  info: "border-[var(--info-border)] bg-[var(--bg-card)]",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -67,11 +67,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             role="status"
           >
             {ICONS[t.kind]}
-            <p className="flex-1 text-sm font-medium text-surface-800">{t.message}</p>
+            <p className="flex-1 text-sm font-medium text-[var(--text-primary)]">{t.message}</p>
             <button
               type="button"
               onClick={() => dismiss(t.id)}
-              className="text-surface-400 transition hover:text-surface-600"
+              className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
               aria-label="Dismiss notification"
             >
               <X className="size-4" />

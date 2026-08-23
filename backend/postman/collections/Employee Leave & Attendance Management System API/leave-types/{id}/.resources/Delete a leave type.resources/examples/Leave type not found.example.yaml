@@ -1,0 +1,28 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/leave-types/:id"
+  method: DELETE
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: string
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "Something went wrong",
+        "error": {
+          "code": "SOME_ERROR_CODE"
+        }
+      }
+order: 4000

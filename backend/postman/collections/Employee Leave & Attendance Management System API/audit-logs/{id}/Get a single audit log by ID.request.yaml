@@ -1,0 +1,13 @@
+$kind: http-request
+description: Requires HR or ADMIN role.
+url: "{{baseUrl}}/audit-logs/:id"
+method: GET
+pathVariables:
+  id: string
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Get a single audit log by ID.resources/examples
+order: 1000

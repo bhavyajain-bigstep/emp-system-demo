@@ -1,0 +1,24 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/departments/:id"
+  method: GET
+  headers:
+    Accept: application/json
+  pathVariables:
+    id: string
+response:
+  statusCode: 404
+  statusText: Not Found
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "message": "Something went wrong",
+        "error": {
+          "code": "SOME_ERROR_CODE"
+        }
+      }
+order: 2000

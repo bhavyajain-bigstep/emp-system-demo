@@ -1,0 +1,64 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/employees?page=1&limit=10&departmentId=string&status=INACTIVE"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    page: "1"
+    limit: "10"
+    departmentId: string
+    status: INACTIVE
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Employees fetched successfully",
+        "data": [
+          {
+            "_id": "6612abf4c1a2b3d4e5f6a7b8",
+            "employeeCode": "EMP-1042",
+            "name": "Jayant Kaushik",
+            "email": "jayant@example.com",
+            "role": "EMPLOYEE",
+            "managerId": "string",
+            "departmentId": "string",
+            "joiningDate": "1998-02-07T20:53:05.096Z",
+            "status": "ACTIVE",
+            "timezone": "Asia/Kolkata",
+            "createdAt": "2004-04-19T18:27:27.779Z",
+            "updatedAt": "1983-05-04T17:06:29.253Z"
+          },
+          {
+            "_id": "6612abf4c1a2b3d4e5f6a7b8",
+            "employeeCode": "EMP-1042",
+            "name": "Jayant Kaushik",
+            "email": "jayant@example.com",
+            "role": "EMPLOYEE",
+            "managerId": "string",
+            "departmentId": "string",
+            "joiningDate": "1955-02-12T16:40:55.869Z",
+            "status": "ACTIVE",
+            "timezone": "Asia/Kolkata",
+            "createdAt": "1963-08-02T23:21:27.873Z",
+            "updatedAt": "1981-01-08T19:10:32.395Z"
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "limit": 10,
+          "total": 100,
+          "totalPages": 10
+        }
+      }
+order: 1000

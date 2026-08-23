@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { ShieldCheck, CalendarClock, Plane, Scale, LockKeyhole } from "lucide-react";
+import { Shield, Calendar, Users, Plane, Lock, Sparkles } from "lucide-react";
 
 import { useAuth } from "@/context/auth";
 import { useToast } from "@/components/ui/toast";
@@ -22,7 +22,7 @@ export default function LoginPage() {
   const mutation = useMutation({
     mutationFn: () => login(email, password),
     onSuccess: () => {
-      toast("success", "Welcome back! You're signed in.");
+      toast("success", "Welcome back. You're signed in.");
       navigate(location.state?.from ?? "/dashboard", { replace: true });
     },
     onError: (error) => {
@@ -42,65 +42,71 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-surface-900 p-12 lg:flex">
-        <div className="absolute -top-24 -right-24 size-96 rounded-full bg-primary-600/20 blur-3xl" />
-        <div className="absolute bottom-0 -left-24 size-96 rounded-full bg-primary-500/10 blur-3xl" />
-
+    <div className="flex min-h-screen bg-[var(--bg-page)]">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-12 relative">
+        <div className="absolute inset-0 opacity-50 bg-pattern" />
+        
         <div className="relative flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary-600 text-lg font-extrabold text-white">
-            PH
+          <div className="flex size-11 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm text-lg font-extrabold text-white border border-white/30">
+            T
           </div>
           <div>
-            <p className="text-lg font-bold text-white">PulseHR</p>
-            <p className="text-sm text-surface-400">Employee Leave & Attendance</p>
+            <p className="text-lg font-bold text-white">TimeFlow</p>
+            <p className="text-sm text-brand-100">Workforce Time & Attendance</p>
           </div>
         </div>
 
-        <div className="relative">
-          <h1 className="max-w-md text-4xl font-extrabold leading-tight tracking-tight text-white">
-            Keep your team present, planned, and productive.
+        <div className="relative max-w-xl">
+          <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white">
+            One platform. Complete workforce visibility.
           </h1>
-          <p className="mt-4 max-w-md text-surface-400">
-            A single platform to manage attendance, leave requests, approvals, and reporting across your
-            organization.
+          <p className="mt-4 max-w-md text-brand-100">
+            Track attendance, manage time off, and approve requests in one unified system. Built for teams that value clarity.
           </p>
 
-          <div className="mt-10 grid max-w-md grid-cols-2 gap-4">
+          <div className="mt-10 grid grid-cols-2 gap-4">
             {[
-              { icon: CalendarClock, label: "Smart attendance", desc: "Check-in, summary & late tracking" },
-              { icon: Plane, label: "Leave workflow", desc: "Apply, approve & balance tracking" },
-              { icon: Scale, label: "Role-based access", desc: "Employee, manager & HR views" },
-              { icon: ShieldCheck, label: "Audit trail", desc: "Every action is recorded" },
+              { icon: Calendar, label: "Smart attendance", desc: "Check-in, overtime & late tracking" },
+              { icon: Plane, label: "Time off workflow", desc: "Request, approve & balance sync" },
+              { icon: Users, label: "Role-based views", desc: "Employee, lead & admin dashboards" },
+              { icon: Shield, label: "Full audit trail", desc: "Every action recorded" },
             ].map((f) => (
-              <div key={f.label} className="rounded-xl border border-surface-800 bg-surface-800/50 p-4">
-                <f.icon className="size-5 text-primary-400" />
+              <div key={f.label} className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm p-4">
+                <f.icon className="size-5 text-brand-300" />
                 <p className="mt-2 text-sm font-semibold text-white">{f.label}</p>
-                <p className="mt-0.5 text-xs text-surface-400">{f.desc}</p>
+                <p className="mt-0.5 text-xs text-brand-200">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="relative text-xs text-surface-500">
-          © {new Date().getFullYear()} PulseHR · Employee Leave & Attendance Management System
-        </p>
+        <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
+          <p className="text-xs text-brand-200">
+            © {new Date().getFullYear()} TimeFlow · Workforce Time & Attendance Platform
+          </p>
+          <div className="flex items-center gap-3 text-xs text-brand-200">
+            <Sparkles className="size-4" />
+            <span>Simple by design</span>
+            <Shield className="size-4" />
+            <span>Secure by default</span>
+          </div>
+        </div>
       </div>
 
-      <div className="flex w-full flex-col items-center justify-center bg-surface-50 px-6 py-12 lg:w-1/2">
-        <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary-600 text-base font-extrabold text-white">
-            PH
+      <div className="flex w-full flex-col items-center justify-center bg-[var(--bg-page)] px-6 py-12 lg:w-1/2">
+        <div className="mb-8 flex items-center gap-2.5">
+          <div className="flex size-10 items-center justify-center rounded-lg bg-brand-600 text-base font-extrabold text-white">
+            T
           </div>
           <div>
-            <p className="text-base font-bold text-surface-900">PulseHR</p>
-            <p className="text-xs text-surface-500">Leave & Attendance</p>
+            <p className="text-base font-bold text-[var(--text-primary)]">TimeFlow</p>
+            <p className="text-xs text-[var(--text-muted)]">Time & Attendance</p>
           </div>
         </div>
 
         <div className="w-full max-w-md">
-          <h2 className="text-2xl font-bold tracking-tight text-surface-900">Sign in to your account</h2>
-          <p className="mt-1 text-sm text-surface-500">
+          <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Sign in to your workspace</h2>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
             Use your work email and password to continue.
           </p>
 
@@ -136,19 +142,19 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-8 rounded-lg border border-primary-100 bg-primary-50 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-primary-800">
-              <LockKeyhole className="size-4" />
+          <div className="mt-8 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-surface)] p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]">
+              <Lock className="size-4" />
               Demo accounts
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-primary-900">
-              <span>admin@example.com</span>
-              <span>hr@example.com</span>
-              <span>manager@example.com</span>
-              <span>employee@example.com</span>
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-[var(--text-tertiary)]">
+              <span>admin@demo.com</span>
+              <span>hr@demo.com</span>
+              <span>lead@demo.com</span>
+              <span>employee@demo.com</span>
             </div>
-            <p className="mt-2 text-xs text-primary-700">
-              Password for all demo accounts: <span className="font-mono font-semibold">Password@123</span>
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
+              Password for all accounts: <span className="font-mono font-semibold">Password@123</span>
             </p>
           </div>
         </div>

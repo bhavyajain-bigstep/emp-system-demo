@@ -1,0 +1,27 @@
+$kind: http-request
+description: Requires HR or ADMIN role.
+url: "{{baseUrl}}/employees/:id"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Accept: application/json
+pathVariables:
+  id: string
+body:
+  type: json
+  content: |-
+    {
+      "name": "string",
+      "role": "MANAGER",
+      "managerId": "string",
+      "departmentId": "string",
+      "timezone": "string",
+      "status": "SUSPENDED"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Update an employee.resources/examples
+order: 2000

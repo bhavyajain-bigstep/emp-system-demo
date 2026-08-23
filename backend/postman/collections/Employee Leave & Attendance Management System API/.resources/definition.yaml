@@ -1,0 +1,4 @@
+$kind: collection
+description: Backend REST API for employee management, department structure, attendance tracking, and leave workflows.
+variables:
+  baseUrl: /api/v1

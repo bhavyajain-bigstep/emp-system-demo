@@ -1,0 +1,52 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/employees/:id"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    id: string
+  body:
+    type: json
+    content: |-
+      {
+        "name": "string",
+        "role": "MANAGER",
+        "managerId": "string",
+        "departmentId": "string",
+        "timezone": "string",
+        "status": "SUSPENDED"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Employee updated successfully",
+        "data": {
+          "_id": "6612abf4c1a2b3d4e5f6a7b8",
+          "employeeCode": "EMP-1042",
+          "name": "Jayant Kaushik",
+          "email": "jayant@example.com",
+          "role": "EMPLOYEE",
+          "managerId": "string",
+          "departmentId": "string",
+          "joiningDate": "1953-08-29T05:13:12.180Z",
+          "status": "ACTIVE",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "1966-09-05T22:25:01.075Z",
+          "updatedAt": "1993-12-05T08:37:52.306Z"
+        }
+      }
+order: 1000

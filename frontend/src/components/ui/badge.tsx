@@ -5,13 +5,13 @@ import { cn } from "@/lib/utils";
 type BadgeTone = "slate" | "green" | "red" | "amber" | "sky" | "violet" | "primary";
 
 const TONES: Record<BadgeTone, string> = {
-  slate: "bg-surface-100 text-surface-700 ring-surface-200",
-  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  red: "bg-red-50 text-red-700 ring-red-200",
-  amber: "bg-amber-50 text-amber-700 ring-amber-200",
-  sky: "bg-sky-50 text-sky-700 ring-sky-200",
-  violet: "bg-violet-50 text-violet-700 ring-violet-200",
-  primary: "bg-primary-50 text-primary-700 ring-primary-200",
+  slate: "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] ring-[var(--border-primary)]",
+  green: "bg-[var(--success-bg)] text-[var(--success-text)] ring-[var(--success-border)]",
+  red: "bg-[var(--error-bg)] text-[var(--error-text)] ring-[var(--error-border)]",
+  amber: "bg-[var(--warning-bg)] text-[var(--warning-text)] ring-[var(--warning-border)]",
+  sky: "bg-[var(--info-bg)] text-[var(--info-text)] ring-[var(--info-border)]",
+  violet: "bg-lavender-100 text-lavender-700 ring-lavender-200 dark:bg-lavender-900/30 dark:text-lavender-300 dark:ring-lavender-800",
+  primary: "bg-[var(--info-bg)] text-[var(--info-text)] ring-[var(--info-border)]",
 };
 
 export function Badge({

@@ -1,0 +1,11 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/auth/refresh"
+  method: POST
+response:
+  statusCode: 401
+  statusText: Unauthorized
+  body:
+    type: text
+    content: ""
+order: 2000

@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{baseUrl}}/departments"
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Engineering",
+      "managerId": "string"
+    }
+settings: {}
+examples: ./.resources/Create a department.resources/examples
+order: 3000

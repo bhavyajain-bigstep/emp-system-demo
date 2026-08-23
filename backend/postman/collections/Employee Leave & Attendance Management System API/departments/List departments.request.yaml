@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{baseUrl}}/departments?page=1&limit=10&status=ACTIVE"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  page: "1"
+  limit: "10"
+  status: ACTIVE
+settings: {}
+examples: ./.resources/List departments.resources/examples
+order: 2000

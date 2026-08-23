@@ -38,7 +38,7 @@ export default function AttendancePage() {
       />
 
       {showTeam ? (
-        <div className="mb-6 inline-flex rounded-lg border border-surface-200 bg-white p-1 shadow-sm">
+        <div className="mb-6 inline-flex rounded-lg border border-[var(--border-primary)] bg-[var(--bg-surface)] p-1 shadow-sm">
           {(["mine", "team"] as const).map((t) => (
             <button
               key={t}
@@ -46,7 +46,7 @@ export default function AttendancePage() {
               onClick={() => setTab(t)}
               className={cn(
                 "rounded-md px-4 py-1.5 text-sm font-semibold transition",
-                tab === t ? "bg-primary-600 text-white" : "text-surface-600 hover:bg-surface-100"
+                tab === t ? "bg-brand-600 text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
               )}
             >
               {t === "mine" ? "My attendance" : "Team attendance"}
@@ -122,21 +122,21 @@ function MyAttendance() {
       <Card>
         <CardBody className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div className="flex items-start gap-4">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
               <CalendarClock className="size-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-surface-500">Today · {format(now, "EEEE, dd MMM yyyy")}</p>
-              <p className="mt-1 text-2xl font-bold text-surface-900">
+              <p className="text-sm font-medium text-[var(--text-muted)]">Today · {format(now, "EEEE, dd MMM yyyy")}</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">
                 {checkedIn ? (checkedOut ? "Checked out" : "Checked in") : "Not checked in yet"}
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-surface-600">
+              <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-[var(--text-secondary)]">
                 <span className="flex items-center gap-1.5">
-                  <Clock className="size-4 text-surface-400" />
+                  <Clock className="size-4 text-[var(--text-muted)]" />
                   Check-in: {formatTime(todayRecord?.checkInAt)}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="size-4 text-surface-400" />
+                  <Clock className="size-4 text-[var(--text-muted)]" />
                   Check-out: {formatTime(todayRecord?.checkOutAt)}
                 </span>
                 {todayRecord?.status ? <StatusBadge status={todayRecord.status} /> : null}
@@ -203,7 +203,7 @@ function MyAttendance() {
           <StatCard label="Present" value={formatNumber(summary.data!.presentDays)} tone="green" />
           <StatCard label="Late" value={formatNumber(summary.data!.lateDays)} tone="amber" />
           <StatCard label="Half day" value={formatNumber(summary.data!.halfDays)} tone="sky" />
-          <StatCard label="Leave" value={formatNumber(summary.data!.leaveDays)} tone="violet" />
+          <StatCard label="Time off" value={formatNumber(summary.data!.leaveDays)} tone="violet" />
           <StatCard label="Absent" value={formatNumber(summary.data!.absentDays)} tone="red" />
         </div>
       )}
@@ -220,34 +220,34 @@ function MyAttendance() {
             <div className="flex items-center gap-5">
               <div className="relative flex size-28 items-center justify-center">
                 <svg className="size-28 -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="#e2e8f0" strokeWidth="10" />
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border-primary)" strokeWidth="10" />
                   <circle
                     cx="50"
                     cy="50"
                     r="42"
                     fill="none"
-                    stroke="#2549e5"
+                    stroke="var(--border-focus)"
                     strokeWidth="10"
                     strokeLinecap="round"
                     strokeDasharray={`${summary.data!.attendancePercentage * 2.638} 264`}
                   />
                 </svg>
-                <span className="absolute text-xl font-bold text-surface-900">
+                <span className="absolute text-xl font-bold text-[var(--text-primary)]">
                   {summary.data!.attendancePercentage}%
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                <p className="text-surface-600">
-                  Holidays <span className="font-semibold text-surface-900">{summary.data!.holidays}</span>
+                <p className="text-[var(--text-secondary)]">
+                  Holidays <span className="font-semibold text-[var(--text-primary)]">{summary.data!.holidays}</span>
                 </p>
-                <p className="text-surface-600">
-                  Weekends <span className="font-semibold text-surface-900">{summary.data!.weekends}</span>
+                <p className="text-[var(--text-secondary)]">
+                  Weekends <span className="font-semibold text-[var(--text-primary)]">{summary.data!.weekends}</span>
                 </p>
-                <p className="text-surface-600">
-                  Leave days <span className="font-semibold text-surface-900">{summary.data!.leaveDays}</span>
+                <p className="text-[var(--text-secondary)]">
+                  Time off days <span className="font-semibold text-[var(--text-primary)]">{summary.data!.leaveDays}</span>
                 </p>
-                <p className="text-surface-600">
-                  Absent <span className="font-semibold text-surface-900">{summary.data!.absentDays}</span>
+                <p className="text-[var(--text-secondary)]">
+                  Absent <span className="font-semibold text-[var(--text-primary)]">{summary.data!.absentDays}</span>
                 </p>
               </div>
             </div>
@@ -277,7 +277,7 @@ function MyAttendance() {
               <TBody>
                 {records.data!.items.map((record) => (
                   <TR key={record._id}>
-                    <TD className="font-medium text-surface-900">{format(new Date(record.date), "dd MMM yyyy")}</TD>
+                    <TD className="font-medium text-[var(--text-primary)]">{format(new Date(record.date), "dd MMM yyyy")}</TD>
                     <TD>{formatTime(record.checkInAt)}</TD>
                     <TD>{formatTime(record.checkOutAt)}</TD>
                     <TD>
@@ -385,8 +385,8 @@ function TeamAttendance() {
                   return (
                     <TR key={record._id}>
                       <TD>
-                        <p className="font-medium text-surface-900">{emp?.name ?? "—"}</p>
-                        <p className="text-xs text-surface-500">{emp?.employeeCode ?? ""}</p>
+                        <p className="font-medium text-[var(--text-primary)]">{emp?.name ?? "—"}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{emp?.employeeCode ?? ""}</p>
                       </TD>
                       <TD>{format(new Date(record.date), "dd MMM yyyy")}</TD>
                       <TD>{formatTime(record.checkInAt)}</TD>

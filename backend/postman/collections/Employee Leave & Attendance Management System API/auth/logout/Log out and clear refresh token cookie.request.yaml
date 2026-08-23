@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/logout"
+method: POST
+settings: {}
+examples: ./.resources/Log out and clear refresh token cookie.resources/examples
+order: 1000

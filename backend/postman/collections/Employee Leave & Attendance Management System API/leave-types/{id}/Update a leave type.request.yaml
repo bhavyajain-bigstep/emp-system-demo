@@ -1,0 +1,27 @@
+$kind: http-request
+description: Requires HR or ADMIN role.
+url: "{{baseUrl}}/leave-types/:id"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Accept: application/json
+pathVariables:
+  id: string
+body:
+  type: json
+  content: |-
+    {
+      "name": "Casual Leave",
+      "code": "CL",
+      "description": "Leave for personal or casual purposes",
+      "maxDays": 15,
+      "isPaid": true,
+      "carryForward": true
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{bearerToken}}"
+settings: {}
+examples: ./.resources/Update a leave type.resources/examples
+order: 2000

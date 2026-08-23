@@ -16,7 +16,7 @@ import { Pagination } from "@/components/ui/data-display";
 import { csvDownload, formatDate } from "@/lib/utils";
 import type { AttendanceStatus } from "@/types";
 
-type Tab = "attendance" | "leaves";
+type Tab = "attendance" | "timeoff";
 
 function employeeName<T extends { employeeId: string | { name?: string; employeeCode?: string } }>(row: T): { name: string; code: string } {
   const emp = row.employeeId as { name?: string; employeeCode?: string } | string;
@@ -36,8 +36,8 @@ export default function ReportsPage() {
   const [to, setTo] = useState("");
   // Tab-specific filters
   const [attStatus, setAttStatus] = useState("");
-  const [leaveStatus, setLeaveStatus] = useState("");
-  const [leaveTypeId, setLeaveTypeId] = useState("");
+  const [timeoffStatus, setTimeoffStatus] = useState("");
+  const [timeoffTypeId, setTimeoffTypeId] = useState("");
   const [page, setPage] = useState(1);
 
   const departments = useQuery({
@@ -52,7 +52,7 @@ export default function ReportsPage() {
     enabled: isAdmin,
   });
 
-  const leaveTypes = useQuery({
+  const timeoffTypes = useQuery({
     queryKey: ["leave-types"],
     queryFn: leaveTypeApi.list,
   });
@@ -70,10 +70,10 @@ export default function ReportsPage() {
     enabled: tab === "attendance",
   });
 
-  const leaves = useQuery({
-    queryKey: ["reports", "leaves", { ...filters, status: leaveStatus, leaveTypeId, page }],
-    queryFn: () => reportApi.leaves({ ...filters, status: leaveStatus || undefined, leaveTypeId: leaveTypeId || undefined, page, limit: 10 }),
-    enabled: tab === "leaves",
+  const timeoff = useQuery({
+    queryKey: ["reports", "timeoff", { ...filters, status: timeoffStatus, timeoffTypeId, page }],
+    queryFn: () => reportApi.leaves({ ...filters, status: timeoffStatus || undefined, leaveTypeId: timeoffTypeId || undefined, page, limit: 10 }),
+    enabled: tab === "timeoff",
   });
 
   const exportCsv = async () => {
@@ -82,18 +82,18 @@ export default function ReportsPage() {
       const csv = await reportApi.attendanceCsv({ ...csvFilters, status: attStatus || undefined });
       csvDownload(`attendance-report-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     } else {
-      const csv = await reportApi.leavesCsv({ ...csvFilters, status: leaveStatus || undefined, leaveTypeId: leaveTypeId || undefined });
-      csvDownload(`leave-report-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+      const csv = await reportApi.leavesCsv({ ...csvFilters, status: timeoffStatus || undefined, leaveTypeId: timeoffTypeId || undefined });
+      csvDownload(`timeoff-report-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     }
   };
 
-  const current = tab === "attendance" ? attendance : leaves;
+  const current = tab === "attendance" ? attendance : timeoff;
 
   return (
     <div>
       <PageHeader
         title="Reports"
-        description="Analyze attendance and leave activity across the organization."
+        description="Analyze attendance and time off activity across the organization."
         actions={
           <Button variant="outline" onClick={exportCsv}>
             <Download className="size-4" />
@@ -102,24 +102,24 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="mb-5 inline-flex rounded-lg bg-surface-100 p-1">
+      <div className="mb-5 inline-flex rounded-lg bg-[var(--bg-hover)] p-1">
         <button
           onClick={() => { setTab("attendance"); setPage(1); }}
           className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${
-            tab === "attendance" ? "bg-white text-primary-700 shadow-sm" : "text-surface-600 hover:text-surface-900"
+            tab === "attendance" ? "bg-[var(--bg-surface)] text-brand-700 shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           }`}
         >
           <History className="size-4" />
           Attendance
         </button>
         <button
-          onClick={() => { setTab("leaves"); setPage(1); }}
+          onClick={() => { setTab("timeoff"); setPage(1); }}
           className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${
-            tab === "leaves" ? "bg-white text-primary-700 shadow-sm" : "text-surface-600 hover:text-surface-900"
+            tab === "timeoff" ? "bg-[var(--bg-surface)] text-brand-700 shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           }`}
         >
           <FileBarChart2 className="size-4" />
-          Leave
+          Time Off
         </button>
       </div>
 
@@ -157,23 +157,23 @@ export default function ReportsPage() {
                   <option value="LATE">Late</option>
                   <option value="HALF_DAY">Half day</option>
                   <option value="ABSENT">Absent</option>
-                  <option value="LEAVE">Leave</option>
+                  <option value="LEAVE">On leave</option>
                 </Select>
               </div>
             ) : (
               <>
                 <div>
-                  <Label>Leave type</Label>
-                  <Select value={leaveTypeId} onChange={(e) => { setLeaveTypeId(e.target.value); setPage(1); }}>
+                  <Label>Time off type</Label>
+                  <Select value={timeoffTypeId} onChange={(e) => { setTimeoffTypeId(e.target.value); setPage(1); }}>
                     <option value="">All</option>
-                    {leaveTypes.data?.map((lt) => (
+                    {timeoffTypes.data?.map((lt) => (
                       <option key={lt._id} value={lt._id}>{lt.name}</option>
                     ))}
                   </Select>
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <Select value={leaveStatus} onChange={(e) => { setLeaveStatus(e.target.value); setPage(1); }}>
+                  <Select value={timeoffStatus} onChange={(e) => { setTimeoffStatus(e.target.value); setPage(1); }}>
                     <option value="">All</option>
                     <option value="PENDING">Pending</option>
                     <option value="APPROVED">Approved</option>
@@ -215,7 +215,7 @@ export default function ReportsPage() {
                       </>
                     ) : (
                       <>
-                        <TH>Leave type</TH>
+                        <TH>Time off type</TH>
                         <TH>From → To</TH>
                         <TH>Days</TH>
                         <TH>Status</TH>
@@ -232,14 +232,14 @@ export default function ReportsPage() {
                       return (
                         <TR key={a._id}>
                           <TD>
-                            <p className="font-medium text-surface-900">{emp.name}</p>
-                            <p className="text-xs text-surface-500">{emp.code}</p>
+                            <p className="font-medium text-[var(--text-primary)]">{emp.name}</p>
+                            <p className="text-xs text-[var(--text-muted)]">{emp.code}</p>
                           </TD>
                           <TD>{formatDate(a.date)}</TD>
                           <TD><StatusBadge status={a.status} /></TD>
-                          <TD className="text-surface-600">{a.checkInAt ? format(parseISO(a.checkInAt), "HH:mm") : "—"}</TD>
-                          <TD className="text-surface-600">{a.checkOutAt ? format(parseISO(a.checkOutAt), "HH:mm") : "—"}</TD>
-                          <TD className="text-surface-600">{a.workingHours ? `${a.workingHours.toFixed(1)}h` : "—"}</TD>
+                          <TD className="text-[var(--text-secondary)]">{a.checkInAt ? format(parseISO(a.checkInAt), "HH:mm") : "—"}</TD>
+                          <TD className="text-[var(--text-secondary)]">{a.checkOutAt ? format(parseISO(a.checkOutAt), "HH:mm") : "—"}</TD>
+                          <TD className="text-[var(--text-secondary)]">{a.workingHours ? `${a.workingHours.toFixed(1)}h` : "—"}</TD>
                         </TR>
                       );
                     }
@@ -248,14 +248,14 @@ export default function ReportsPage() {
                     return (
                       <TR key={l._id}>
                         <TD>
-                          <p className="font-medium text-surface-900">{emp.name}</p>
-                          <p className="text-xs text-surface-500">{emp.code}</p>
+                          <p className="font-medium text-[var(--text-primary)]">{emp.name}</p>
+                          <p className="text-xs text-[var(--text-muted)]">{emp.code}</p>
                         </TD>
-                        <TD>{typeof lt === "string" ? "Leave" : lt?.name ?? "Leave"}</TD>
-                        <TD className="text-surface-600">{formatDate(l.fromDate)} → {formatDate(l.toDate)}</TD>
+                        <TD>{typeof lt === "string" ? "Time Off" : lt?.name ?? "Time Off"}</TD>
+                        <TD className="text-[var(--text-secondary)]">{formatDate(l.fromDate)} → {formatDate(l.toDate)}</TD>
                         <TD>{l.days}</TD>
                         <TD><StatusBadge status={l.status} /></TD>
-                        <TD className="max-w-48"><p className="truncate text-surface-600" title={l.reason}>{l.reason}</p></TD>
+                        <TD className="max-w-48"><p className="truncate text-[var(--text-secondary)]" title={l.reason}>{l.reason}</p></TD>
                       </TR>
                     );
                   })}

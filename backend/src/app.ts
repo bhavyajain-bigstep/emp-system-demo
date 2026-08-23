@@ -52,7 +52,7 @@ app.use(
     },
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-  })
+  }),
 );
 
 // CORS restricted to frontend origin
@@ -62,7 +62,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 // Global rate limiter (except health)
@@ -102,6 +102,10 @@ app.get("/health", async (_req, res) => {
 // Swagger only in non-production
 if (env.NODE_ENV !== "production") {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.get("/api-docs.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+  });
 }
 
 // Auth stricter rate limit

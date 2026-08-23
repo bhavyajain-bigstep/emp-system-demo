@@ -1,0 +1,38 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/departments/:id"
+  method: PATCH
+  headers:
+    Content-Type: application/json
+    Accept: application/json
+  pathVariables:
+    id: string
+  body:
+    type: json
+    content: |-
+      {
+        "name": "string",
+        "managerId": "string",
+        "status": "ARCHIVED"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Department updated successfully",
+        "data": {
+          "_id": "string",
+          "name": "Engineering",
+          "managerId": "string",
+          "status": "ACTIVE",
+          "createdAt": "2006-12-09T09:08:25.134Z",
+          "updatedAt": "1989-09-01T06:12:48.351Z"
+        }
+      }
+order: 1000

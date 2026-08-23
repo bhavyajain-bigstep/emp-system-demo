@@ -66,7 +66,7 @@ export default function HolidaysPage() {
             <Button onClick={() => setAddOpen(true)}>
               <Plus className="size-4" />
               Add holiday
-           </Button>
+            </Button>
           ) : undefined
         }
       />
@@ -82,7 +82,7 @@ export default function HolidaysPage() {
                 </option>
               ))}
             </Select>
-            <p className="text-sm text-surface-500">
+            <p className="text-sm text-[var(--text-muted)]">
               {holidays.data?.length ?? 0} holiday{(holidays.data?.length ?? 0) === 1 ? "" : "s"} in {year}
             </p>
           </div>
@@ -92,22 +92,22 @@ export default function HolidaysPage() {
           ) : holidays.isError ? (
             <ErrorState message={holidays.error?.message ?? "Failed to load"} onRetry={() => holidays.refetch()} />
           ) : holidays.data?.length === 0 ? (
-            <EmptyState title="No holidays scheduled" description="Add holidays so leave requests can exclude them automatically." />
+            <EmptyState title="No holidays scheduled" description="Add holidays so time off requests can exclude them automatically." />
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {months.map((m) => {
                 const items = byMonth.get(m);
                 if (!items || items.length === 0) {
                   return (
-                    <div key={m} className="rounded-xl border border-dashed border-surface-200 p-4">
-                      <p className="text-sm font-semibold text-surface-900">{format(new Date(year, m - 1, 1), "MMMM")}</p>
-                      <p className="mt-1 text-xs text-surface-400">No holidays</p>
+                    <div key={m} className="rounded-xl border border-dashed border-[var(--border-primary)] p-4">
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">{format(new Date(year, m - 1, 1), "MMMM")}</p>
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">No holidays</p>
                     </div>
                   );
                 }
                 return (
-                  <div key={m} className="rounded-xl border border-surface-200 bg-surface-50/40 p-4">
-                    <p className="mb-3 text-sm font-semibold text-surface-900">{format(new Date(year, m - 1, 1), "MMMM")}</p>
+                  <div key={m} className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-hover)]/40 p-4">
+                    <p className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{format(new Date(year, m - 1, 1), "MMMM")}</p>
                     <div className="space-y-2">
                       {items
                         .slice()
@@ -115,18 +115,18 @@ export default function HolidaysPage() {
                         .map((h) => (
                           <div
                             key={h._id}
-                            className="flex items-center gap-3 rounded-lg border border-surface-200 bg-white px-3 py-2.5"
+                            className="flex items-center gap-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-surface)] px-3 py-2.5"
                           >
-                            <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+                            <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
                               <span className="text-sm font-bold leading-none">{format(parseISO(h.date), "d")}</span>
                               <span className="text-[10px] uppercase leading-none">{format(parseISO(h.date), "EEE")}</span>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-surface-900">{h.name}</p>
-                              <p className="flex items-center gap-1 text-xs text-surface-500">
+                              <p className="truncate text-sm font-medium text-[var(--text-primary)]">{h.name}</p>
+                              <p className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                                 {format(parseISO(h.date), "MMM d, yyyy")}
                                 {h.optional && (
-                                  <Badge className="bg-sky-50 text-sky-700 ring-sky-200">
+                                  <Badge tone="sky">
                                     <Sparkles className="size-3" />
                                     Optional
                                   </Badge>
@@ -134,9 +134,9 @@ export default function HolidaysPage() {
                               </p>
                             </div>
                             {canManage ? (
-                              <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => setDeleteTarget(h)}>
+                              <Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50" onClick={() => setDeleteTarget(h)}>
                                 <Trash2 className="size-4" />
-                             </Button>
+                              </Button>
                             ) : null}
                           </div>
                         ))}
@@ -221,7 +221,7 @@ function AddHolidayModal({ open, onClose }: { open: boolean; onClose: () => void
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Independence Day" />
           <FieldError message={errors.name} />
         </div>
-        <RuleToggle label="Optional holiday" hint="Optional holidays are excluded only when the leave type chooses to" checked={optional} onChange={setOptional} />
+        <RuleToggle label="Optional holiday" hint="Optional holidays are excluded only when the time off type chooses to" checked={optional} onChange={setOptional} />
       </div>
     </Modal>
   );
@@ -229,12 +229,12 @@ function AddHolidayModal({ open, onClose }: { open: boolean; onClose: () => void
 
 function RuleToggle({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className="flex w-full items-center justify-between gap-4 rounded-lg border border-surface-200 bg-white px-4 py-3 text-left transition hover:border-primary-200">
+    <button type="button" onClick={() => onChange(!checked)} className="flex w-full items-center justify-between gap-4 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-surface)] px-4 py-3 text-left transition hover:border-brand-200 dark:hover:border-brand-800">
       <span>
-        <span className="block text-sm font-medium text-surface-900">{label}</span>
-        <span className="block text-xs text-surface-500">{hint}</span>
+        <span className="block text-sm font-medium text-[var(--text-primary)]">{label}</span>
+        <span className="block text-xs text-[var(--text-muted)]">{hint}</span>
       </span>
-      <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${checked ? "bg-primary-600" : "bg-surface-300"}`}>
+      <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${checked ? "bg-brand-600" : "bg-[var(--border-secondary)]"}`}>
         <span className={`inline-block size-4 transform rounded-full bg-white shadow transition ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`} />
       </span>
     </button>

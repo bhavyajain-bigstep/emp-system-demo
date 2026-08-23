@@ -1,0 +1,29 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/departments/:id"
+  method: GET
+  headers:
+    Accept: application/json
+  pathVariables:
+    id: string
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Department fetched successfully",
+        "data": {
+          "_id": "string",
+          "name": "Engineering",
+          "managerId": "string",
+          "status": "ACTIVE",
+          "createdAt": "1990-09-18T00:58:47.720Z",
+          "updatedAt": "2005-03-06T13:37:31.546Z"
+        }
+      }
+order: 1000

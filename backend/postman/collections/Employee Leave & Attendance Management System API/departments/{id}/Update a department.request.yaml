@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/departments/:id"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Accept: application/json
+pathVariables:
+  id: string
+body:
+  type: json
+  content: |-
+    {
+      "name": "string",
+      "managerId": "string",
+      "status": "ARCHIVED"
+    }
+settings: {}
+examples: ./.resources/Update a department.resources/examples
+order: 2000

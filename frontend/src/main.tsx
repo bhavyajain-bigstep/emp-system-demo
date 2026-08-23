@@ -7,17 +7,20 @@ import "./index.css";
 import App from "./App";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/context/auth";
+import { ThemeProvider } from "@/context/theme";
 import { ToastProvider } from "@/components/ui/toast";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </BrowserRouter>
   </StrictMode>

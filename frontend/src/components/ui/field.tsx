@@ -2,7 +2,7 @@ import { forwardRef, type InputHTMLAttributes, type SelectHTMLAttributes, type T
 import { cn } from "@/lib/utils";
 
 const baseField =
-  "w-full rounded-lg border border-surface-300 bg-white px-3 text-sm text-surface-900 shadow-sm transition placeholder:text-surface-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-100";
+  "w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-primary)] shadow-sm transition-all duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)] focus:ring-2 focus:ring-[var(--border-focus)]/30 focus:outline-none disabled:cursor-not-allowed disabled:bg-[var(--bg-tertiary)] disabled:text-[var(--text-muted)]";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => (
@@ -29,14 +29,36 @@ Select.displayName = "Select";
 
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
-    <label
-      className={cn("mb-1.5 block text-sm font-medium text-surface-700", className)}
-      {...props}
-    />
+    <label className={cn("mb-1.5 block text-sm font-medium text-[var(--text-secondary)]", className)} {...props} />
   );
 }
 
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-1 text-xs text-red-600">{message}</p>;
+  return <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{message}</p>;
+}
+
+export function FieldHint({ children }: { children: React.ReactNode }) {
+  return <p className="mt-1 text-xs text-[var(--text-muted)]">{children}</p>;
+}
+
+export function FieldWrapper({ label, hint, error, children, className, required }: {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
+  required?: boolean;
+}) {
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <Label>
+        {label}
+        {required && <span className="text-rose-500 ml-1" aria-hidden="true">*</span>}
+      </Label>
+      {children}
+      {hint && !error && <FieldHint>{hint}</FieldHint>}
+      {error && <FieldError message={error} />}
+    </div>
+  );
 }

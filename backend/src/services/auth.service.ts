@@ -2,6 +2,7 @@ import { compare, hash } from "bcrypt";
 
 import {
   findEmployeeByEmail,
+  findEmployeeById,
   updateRefreshTokenHash,
 } from "../repositories/employee.repository";
 import { AppError } from "../errors/app-error";
@@ -63,7 +64,7 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
     throw new AppError("Invalid refresh token", 401, "INVALID_REFRESH_TOKEN");
   }
 
-  const employee = await findEmployeeById(payload.userId);
+  const employee = await findEmployeeById(payload.userId, true);
   if (!employee || !employee.refreshTokenHash) {
     throw new AppError("Invalid refresh token", 401, "INVALID_REFRESH_TOKEN");
   }
@@ -108,6 +109,3 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
 export const logoutService = async (userId: string) => {
   await updateRefreshTokenHash(userId, null);
 };
-
-// Need to import findEmployeeById
-import { findEmployeeById } from "../repositories/employee.repository";
