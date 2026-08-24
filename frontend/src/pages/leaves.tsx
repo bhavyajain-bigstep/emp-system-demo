@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseISO } from "date-fns";
-import { Plane, Plus, XCircle } from "lucide-react";
+import { Plane, Plus, XCircle, AlertCircle } from "lucide-react";
 
 import { leaveApi, leaveTypeApi, leaveBalanceApi } from "@/lib/endpoints";
 import { useToast } from "@/components/ui/toast";
@@ -39,6 +39,7 @@ export default function LeavesPage() {
       toast("success", "Time off request cancelled.");
       setCancelTarget(null);
       queryClient.invalidateQueries({ queryKey: ["leaves", "mine"] });
+      queryClient.invalidateQueries({ queryKey: ["leave-balances"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (error) => toast("error", getErrorMessage(error)),
@@ -88,23 +89,38 @@ export default function LeavesPage() {
             </THead>
             <TBody>
               {leaves.data!.map((leave) => (
-                <TR key={leave._id}>
-                  <TD className="font-medium text-[var(--text-primary)]">{leaveTypeLabel(leave)}</TD>
-                  <TD>{formatDate(leave.fromDate)}</TD>
-                  <TD>{formatDate(leave.toDate)}</TD>
-                  <TD>{leave.days}</TD>
-                  <TD>
-                    <StatusBadge status={leave.status} />
-                  </TD>
-                  <TD className="text-right">
-                    {(leave.status === "PENDING" || leave.status === "APPROVED") && (
-                      <Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50" onClick={() => setCancelTarget(leave)}>
-                        <XCircle className="size-4" />
-                        Cancel
-                      </Button>
-                    )}
-                  </TD>
-                </TR>
+                <>
+                  <TR key={leave._id}>
+                    <TD className="font-medium text-[var(--text-primary)]">{leaveTypeLabel(leave)}</TD>
+                    <TD>{formatDate(leave.fromDate)}</TD>
+                    <TD>{formatDate(leave.toDate)}</TD>
+                    <TD>{leave.days}</TD>
+                    <TD>
+                      <StatusBadge status={leave.status} />
+                    </TD>
+                    <TD className="text-right">
+                      {(leave.status === "PENDING" || leave.status === "APPROVED") && (
+                        <Button variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50" onClick={() => setCancelTarget(leave)}>
+                          <XCircle className="size-4" />
+                          Cancel
+                        </Button>
+                      )}
+                    </TD>
+                  </TR>
+                  {leave.status === "REJECTED" && leave.rejectionReason && (
+                    <TR className="bg-[var(--bg-hover)]/50">
+                      <TD colSpan={6} className="py-3 px-4">
+                        <div className="flex items-start gap-3 text-sm text-[var(--text-secondary)] p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+                          <AlertCircle className="size-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-rose-700 dark:text-rose-300">Rejection reason:</p>
+                            <p className="mt-1">{leave.rejectionReason}</p>
+                          </div>
+                        </div>
+                      </TD>
+                    </TR>
+                  )}
+                </>
               ))}
             </TBody>
           </Table>

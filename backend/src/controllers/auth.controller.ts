@@ -7,18 +7,24 @@ import {
 } from "../services/auth.service";
 import { env } from "../config/env";
 
+const isProduction = env.NODE_ENV === "production";
+
+const cookieDomain = isProduction ? undefined : "localhost";
+
 const refreshCookieOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === "production",
+  secure: isProduction,
   sameSite: "lax" as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days,
+  domain: cookieDomain,
 };
 
 const accessCookieOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === "production",
+  secure: isProduction,
   sameSite: "lax" as const,
-  maxAge: 15 * 60 * 1000, // 15 minutes
+  maxAge: 15 * 60 * 1000, // 15 minutes,
+  domain: cookieDomain,
 };
 
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
@@ -27,8 +33,9 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
 }
 
 function clearAuthCookies(res: Response) {
-  res.clearCookie("accessToken", { ...accessCookieOptions, maxAge: 0 });
-  res.clearCookie("refreshToken", { ...refreshCookieOptions, maxAge: 0 });
+  const clearOptions = { maxAge: 0, domain: cookieDomain };
+  res.clearCookie("accessToken", { ...accessCookieOptions, ...clearOptions });
+  res.clearCookie("refreshToken", { ...refreshCookieOptions, ...clearOptions });
 }
 
 export const login = async (

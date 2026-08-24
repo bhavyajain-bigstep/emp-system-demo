@@ -6,19 +6,32 @@ import {
 import { ClientSession, Types } from "mongoose";
 
 export const findAllBalances =
-  async (): Promise<ILeaveBalance[]> => {
-    return LeaveBalance.find()
-      .populate(
-        "employeeId",
-        "employeeCode name email"
-      )
-      .populate(
-        "leaveTypeId",
-        "name code annualQuota rules"
-      )
-      .sort({
-        year: -1,
-      });
+  async (
+    page = 1,
+    limit = 20
+  ): Promise<{ records: ILeaveBalance[]; total: number }> => {
+    const skip = (page - 1) * limit;
+
+    const [records, total] = await Promise.all([
+      LeaveBalance.find()
+        .populate(
+          "employeeId",
+          "employeeCode name email"
+        )
+        .populate(
+          "leaveTypeId",
+          "name code annualQuota rules"
+        )
+        .sort({
+          year: -1,
+        })
+        .skip(skip)
+        .limit(limit),
+
+      LeaveBalance.countDocuments(),
+    ]);
+
+    return { records, total };
   };
 
 export const findBalancesByEmployee =

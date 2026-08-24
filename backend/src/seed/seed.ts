@@ -8,6 +8,7 @@ import {
 import { seedDepartments } from "./department.seed";
 import { seedEmployees } from "./employee.seed";
 import { seedLeaveTypes } from "./leave-type.seed";
+import { seedHolidays } from "./holiday.seed";
 
 const runSeed = async () => {
   try {
@@ -22,6 +23,8 @@ const runSeed = async () => {
     await seedEmployees();
 
     await seedLeaveTypes();
+
+    await seedHolidays();
 
     console.log(
       "Database seed completed successfully"

@@ -16,7 +16,8 @@ import { getErrorMessage } from "@/lib/api";
 import type { LeaveBalance } from "@/types";
 
 function balanceLabel(b: LeaveBalance): string {
-  const lt = b.leaveType as { name?: string } | undefined;
+  console.log(b);
+  const lt = b.leaveTypeId as { name?: string } | undefined;
   return lt?.name ?? "Time Off";
 }
 
@@ -56,7 +57,11 @@ export default function LeaveBalancesPage() {
     <div>
       <PageHeader
         title="Time Off Balances"
-        description={isAdmin ? "View and manage time off allocations across the organization." : "Your allocated, used and remaining time off days."}
+        description={
+          isAdmin
+            ? "View and manage time off allocations across the organization."
+            : "Your allocated, used and remaining time off days."
+        }
         actions={
           isAdmin ? (
             <Button onClick={() => setCreateOpen(true)}>
@@ -72,9 +77,15 @@ export default function LeaveBalancesPage() {
         {mine.isLoading ? (
           <Spinner />
         ) : mine.isError ? (
-          <ErrorState message={mine.error?.message ?? "Failed to load"} onRetry={() => mine.refetch()} />
+          <ErrorState
+            message={mine.error?.message ?? "Failed to load"}
+            onRetry={() => mine.refetch()}
+          />
         ) : mine.data?.length === 0 ? (
-          <EmptyState title="No balances allocated" description="Your time off balances will appear here once allocated by your admin." />
+          <EmptyState
+            title="No balances allocated"
+            description="Your time off balances will appear here once allocated by your admin."
+          />
         ) : (
           <Table>
             <THead>
@@ -89,15 +100,17 @@ export default function LeaveBalancesPage() {
               {mine.data!.map((b) => (
                 <TR key={b._id}>
                   <TD>
-                    <div className="flex items-center gap-2 font-medium text-[var(--text-primary)]">
-                      <Scale className="size-4 text-[var(--text-muted)]" />
+                    <div className="flex items-center gap-2 font-medium text-(--text-primary)">
+                      <Scale className="size-4 text-(--text-muted)" />
                       {balanceLabel(b)}
                     </div>
                   </TD>
                   <TD>{b.allocated}</TD>
                   <TD>{b.used}</TD>
                   <TD>
-                    <span className={`font-semibold ${b.available <= 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                    <span
+                      className={`font-semibold ${b.available <= 0 ? "text-rose-600" : "text-emerald-600"}`}
+                    >
                       {b.available}
                     </span>
                   </TD>
@@ -110,13 +123,22 @@ export default function LeaveBalancesPage() {
 
       {isAdmin ? (
         <Card className="mt-6">
-          <CardHeader title="All allocations" subtitle="Every employee's balance across all time off types" />
+          <CardHeader
+            title="All allocations"
+            subtitle="Every employee's balance across all time off types"
+          />
           {all.isLoading ? (
             <Spinner />
           ) : all.isError ? (
-            <ErrorState message={all.error?.message ?? "Failed to load"} onRetry={() => all.refetch()} />
+            <ErrorState
+              message={all.error?.message ?? "Failed to load"}
+              onRetry={() => all.refetch()}
+            />
           ) : all.data?.items.length === 0 ? (
-            <EmptyState title="No allocations yet" description="Allocate the first time off balance to get started." />
+            <EmptyState
+              title="No allocations yet"
+              description="Allocate the first time off balance to get started."
+            />
           ) : (
             <Table>
               <THead>
@@ -132,24 +154,36 @@ export default function LeaveBalancesPage() {
               </THead>
               <TBody>
                 {all.data!.items.map((b) => {
-                  const emp = b.employee as { name?: string; employeeCode?: string } | undefined;
+                  const emp = b.employeeId as
+                    | { name?: string; employeeCode?: string }
+                    | undefined;
                   return (
                     <TR key={b._id}>
                       <TD>
-                        <p className="font-medium text-[var(--text-primary)]">{emp?.name ?? "—"}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{emp?.employeeCode ?? ""}</p>
+                        <p className="font-medium text-(--text-primary)">
+                          {emp?.name ?? "—"}
+                        </p>
+                        <p className="text-xs text-(--text-muted)">
+                          {emp?.employeeCode ?? ""}
+                        </p>
                       </TD>
                       <TD>{balanceLabel(b)}</TD>
                       <TD>{b.year}</TD>
                       <TD>{b.allocated}</TD>
                       <TD>{b.used}</TD>
                       <TD>
-                        <span className={`font-semibold ${b.available <= 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                        <span
+                          className={`font-semibold ${b.available <= 0 ? "text-rose-600" : "text-emerald-600"}`}
+                        >
                           {b.available}
                         </span>
                       </TD>
                       <TD className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setEditTarget(b)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditTarget(b)}
+                        >
                           <Pencil className="size-4" />
                           Edit
                         </Button>
@@ -178,7 +212,10 @@ export default function LeaveBalancesPage() {
               loading={editMutation.isPending}
               onClick={() =>
                 editTarget &&
-                editMutation.mutate({ id: editTarget._id, allocated: editTarget.allocated })
+                editMutation.mutate({
+                  id: editTarget._id,
+                  allocated: editTarget.allocated,
+                })
               }
             >
               Save changes
@@ -199,10 +236,16 @@ function EditAllocationForm({ target }: { target: LeaveBalance | null }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-[var(--text-secondary)]">
+      <p className="text-sm text-(--text-secondary)">
         Set the total allocated days for{" "}
-        <span className="font-semibold text-[var(--text-primary)]">{(target.employee as { name?: string })?.name ?? "this employee"}</span>{" "}
-        on <span className="font-semibold text-[var(--text-primary)]">{balanceLabel(target)}</span>. Used days will be preserved.
+        <span className="font-semibold text-(--text-primary)">
+          {(target.employee as { name?: string })?.name ?? "this employee"}
+        </span>{" "}
+        on{" "}
+        <span className="font-semibold text-(--text-primary)">
+          {balanceLabel(target)}
+        </span>
+        . Used days will be preserved.
       </p>
       <div>
         <Label>Allocated days</Label>
@@ -212,15 +255,22 @@ function EditAllocationForm({ target }: { target: LeaveBalance | null }) {
           value={allocated}
           onChange={(e) => setAllocated(Number(e.target.value))}
         />
-        <p className="mt-1 text-xs text-[var(--text-muted)]">
-          Currently used: {target.used} · Available after save: {Math.max(allocated - target.used, 0)}
+        <p className="mt-1 text-xs text-(--text-muted)">
+          Currently used: {target.used} · Available after save:{" "}
+          {Math.max(allocated - target.used, 0)}
         </p>
       </div>
     </div>
   );
 }
 
-function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AllocateModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [employeeId, setEmployeeId] = useState("");
@@ -240,7 +290,8 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
   });
 
   const mutation = useMutation({
-    mutationFn: () => leaveBalanceApi.create({ employeeId, leaveTypeId, year, allocated }),
+    mutationFn: () =>
+      leaveBalanceApi.create({ employeeId, leaveTypeId, year, allocated }),
     onSuccess: () => {
       toast("success", "Time off balance allocated.");
       onClose();
@@ -251,7 +302,12 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
     },
     onError: (error) => {
       const msg = getErrorMessage(error);
-      toast("error", msg.includes("already exists") ? "This balance already exists for the employee, time off type and year." : msg);
+      toast(
+        "error",
+        msg.includes("already exists")
+          ? "This balance already exists for the employee, time off type and year."
+          : msg,
+      );
     },
   });
 
@@ -259,7 +315,8 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
     const next: Record<string, string> = {};
     if (!employeeId) next.employeeId = "Select an employee";
     if (!leaveTypeId) next.leaveTypeId = "Select a time off type";
-    if (!allocated || allocated <= 0) next.allocated = "Enter a valid allocation";
+    if (!allocated || allocated <= 0)
+      next.allocated = "Enter a valid allocation";
     setErrors(next);
     if (Object.keys(next).length === 0) mutation.mutate();
   }
@@ -284,7 +341,10 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
       <div className="space-y-4">
         <div>
           <Label>Employee</Label>
-          <Select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
+          <Select
+            value={employeeId}
+            onChange={(e) => setEmployeeId(e.target.value)}
+          >
             <option value="">Select an employee</option>
             {employees.data?.items.map((e) => (
               <option key={e._id} value={e._id}>
@@ -296,7 +356,10 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
         </div>
         <div>
           <Label>Time off type</Label>
-          <Select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)}>
+          <Select
+            value={leaveTypeId}
+            onChange={(e) => setLeaveTypeId(e.target.value)}
+          >
             <option value="">Select a time off type</option>
             {leaveTypes.data?.map((lt) => (
               <option key={lt._id} value={lt._id}>
@@ -309,11 +372,20 @@ function AllocateModal({ open, onClose }: { open: boolean; onClose: () => void }
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>Year</Label>
-            <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+            <Input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+            />
           </div>
           <div>
             <Label>Allocated days</Label>
-            <Input type="number" min={1} value={allocated} onChange={(e) => setAllocated(Number(e.target.value))} />
+            <Input
+              type="number"
+              min={1}
+              value={allocated}
+              onChange={(e) => setAllocated(Number(e.target.value))}
+            />
             <FieldError message={errors.allocated} />
           </div>
         </div>

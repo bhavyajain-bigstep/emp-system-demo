@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarClock,
@@ -15,7 +15,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  Bell,
   HelpCircle,
 } from "lucide-react";
 
@@ -77,23 +76,20 @@ function buildNav(): NavGroup[] {
 export function Navigation() {
   const { user, logout, hasRole } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const notificationsRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setOpenMenu(null);
+    setUserMenuOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenMenu(null);
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
-        setNotificationsOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -144,13 +140,12 @@ export function Navigation() {
                 </button>
 
                 {openMenu === group.label && (
-                  <div className="dropdown-menu" role="menu" ref={menuRef}>
+                  <div className="dropdown-menu" role="menu">
                     {group.items.map((item) => (
                       <NavLink
                         key={item.to}
                         to={item.to}
                         role="menuitem"
-                        onClick={() => setOpenMenu(null)}
                         className={({ isActive }) =>
                           cn(
                             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -180,25 +175,6 @@ export function Navigation() {
           >
             {theme === "light" ? <Moon className="size-5" /> : <Sun className="size-5" />}
           </button>
-
-          <button
-            type="button"
-            onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative rounded-lg p-2 text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
-            aria-label="Notifications"
-            aria-expanded={notificationsOpen}
-            ref={notificationsRef}
-          >
-            <Bell className="size-5" />
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">3</span>
-          </button>
-
-          {notificationsOpen && (
-            <div className="dropdown-menu w-80" role="menu">
-              <div className="px-3 py-2 text-sm font-semibold text-[var(--text-primary)] border-b border-[var(--border-primary)]">Notifications</div>
-              <div className="py-2 text-sm text-[var(--text-muted)]">No new notifications</div>
-            </div>
-          )}
 
           <div className="relative" ref={userMenuRef}>
             <button
@@ -230,7 +206,7 @@ export function Navigation() {
                   </div>
                 </div>
                 <NavLink
-                  to="/profile"
+                  to="/dashboard"
                   role="menuitem"
                   onClick={() => setUserMenuOpen(false)}
                   className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
@@ -276,13 +252,12 @@ export function Navigation() {
                 </button>
 
                 {openMenu === group.label && (
-                  <div className="dropdown-menu left-0 right-auto" role="menu" ref={menuRef}>
+                  <div className="dropdown-menu left-0 right-auto" role="menu">
                     {group.items.map((item) => (
                       <NavLink
                         key={item.to}
                         to={item.to}
                         role="menuitem"
-                        onClick={() => setOpenMenu(null)}
                         className={({ isActive }) =>
                           cn(
                             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",

@@ -44,14 +44,23 @@ export const getAllLeaveBalances =
     next: NextFunction
   ) => {
     try {
-      const balances =
-        await getAllLeaveBalancesService();
+      const page = req.query.page ? Number(req.query.page) : 1;
+      const limit = req.query.limit ? Number(req.query.limit) : 20;
+
+      const result =
+        await getAllLeaveBalancesService(page, limit);
 
       return res.status(200).json({
         success: true,
         message:
           "Leave balances fetched successfully",
-        data: balances,
+        data: result.records,
+        pagination: {
+          page: result.page ?? page,
+          limit: result.limit ?? limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit),
+        },
       });
     } catch (error) {
       next(error);

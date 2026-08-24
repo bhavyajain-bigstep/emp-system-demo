@@ -78,8 +78,8 @@ export default function LeaveTypesPage() {
   const [editTarget, setEditTarget] = useState<LeaveType | null>(null);
 
   const leaveTypes = useQuery({
-    queryKey: ["leave-types"],
-    queryFn: leaveTypeApi.list,
+    queryKey: ["leave-types", "all"],
+    queryFn: leaveTypeApi.listAll,
   });
 
   const statusMutation = useMutation({
@@ -125,7 +125,15 @@ export default function LeaveTypesPage() {
                 </TR>
               </THead>
               <TBody>
-                {leaveTypes.data!.map((lt) => (
+                {leaveTypes.data!
+                  .slice()
+                  .sort((a, b) => {
+                    if (a.status !== b.status) {
+                      return a.status === "ACTIVE" ? -1 : 1;
+                    }
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map((lt) => (
                   <TR key={lt._id}>
                     <TD>
                       <div className="flex items-center gap-3">

@@ -45,6 +45,6 @@ export function TR({
   );
 }
 
-export function TD({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={cn("px-4 py-3 align-middle text-[var(--text-primary)]", className)}>{children}</td>;
+export function TD({ children, className, colSpan }: { children?: ReactNode; className?: string; colSpan?: number }) {
+  return <td colSpan={colSpan} className={cn("px-4 py-3 align-middle text-[var(--text-primary)]", className)}>{children}</td>;
 }

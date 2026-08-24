@@ -11,8 +11,8 @@ import type {
   LeaveBalance,
   LeaveRequest,
   LeaveType,
-  LoginResponse,
   PaginationMeta,
+  User,
 } from "@/types";
 
 type Paginated<T> = { items: T[]; pagination: PaginationMeta };
@@ -79,6 +79,9 @@ export const departmentApi = {
 export const leaveTypeApi = {
   async list(): Promise<LeaveType[]> {
     return unwrap(api.get<ApiResponse<LeaveType[]>>("/leave-types"));
+  },
+  async listAll(): Promise<LeaveType[]> {
+    return unwrap(api.get<ApiResponse<LeaveType[]>>("/leave-types?includeInactive=true"));
   },
   async create(data: Record<string, unknown>): Promise<LeaveType> {
     return unwrap(api.post<ApiResponse<LeaveType>>("/leave-types", data));

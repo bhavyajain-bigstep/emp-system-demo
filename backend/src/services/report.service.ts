@@ -154,7 +154,7 @@ export const getAttendanceReportService = async (
       workingMinutes,
       isLate: record.status === "LATE",
       timezone: record.timezone,
-      employee: record.employeeId,
+      employeeId: record.employeeId,
     };
   });
 
@@ -174,7 +174,7 @@ export const exportAttendanceReportCsv = async (
   const result = await getAttendanceReportService(filter, 1, 10000, auth);
 
   const rows = result.records.map((r) => {
-    const emp = r.employee as any;
+    const emp = r.employeeId as any;
     return {
       "Employee Code": emp?.employeeCode || "",
       "Employee Name": emp?.name || "",

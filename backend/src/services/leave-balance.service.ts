@@ -142,8 +142,18 @@ export const createLeaveBalanceService =
   };
 
 export const getAllLeaveBalancesService =
-  async () => {
-    return findAllBalances();
+  async (
+    page = 1,
+    limit = 20
+  ) => {
+    const { records, total } = await findAllBalances(page, limit);
+
+    return {
+      records,
+      total,
+      page,
+      limit,
+    };
   };
 
 export const getEmployeeLeaveBalancesService =
