@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Response, NextFunction } from "express";
 
 import {
   createDepartment,
@@ -10,6 +10,8 @@ import {
 import { validate } from "../middlewares/validate.middleware";
 import { authenticate } from "../middlewares/auth.middleware";
 import { authorize } from "../middlewares/role.middleware";
+import { authorizeDepartmentManager } from "../middlewares/department-manager.middleware";
+import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 
 import {
   createDepartmentSchema,
@@ -156,7 +158,10 @@ router.post(
  * /departments/{id}:
  *   patch:
  *     summary: Update a department
+ *     description: Requires HR, ADMIN, or the department's assigned manager.
  *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -194,6 +199,18 @@ router.post(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Not authorized (requires HR, ADMIN, or department manager)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Department or manager not found
  *         content:
@@ -207,9 +224,21 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+const authorizeDepartmentUpdate = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  authorizeDepartmentManager(req, res, (err) => {
+    if (!err) return next();
+
+    authorize("HR", "ADMIN")(req, res, next);
+  });
+};
+
 router.patch(
   "/:id",
-  authorize("HR", "ADMIN"),
+  authorizeDepartmentUpdate,
   validate(updateDepartmentSchema),
   updateDepartment
 );

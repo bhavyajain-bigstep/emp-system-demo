@@ -4,7 +4,6 @@ import type { ApiErrorBody, ApiResponse } from "@/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
-export const TOKEN_KEY = "pulsehr.token";
 export const USER_KEY = "pulsehr.user";
 
 export const api: AxiosInstance = axios.create({
@@ -13,16 +12,10 @@ export const api: AxiosInstance = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 30000,
-  withCredentials: true, // send cookies (refresh token)
+  withCredentials: true, // send HttpOnly cookies (access + refresh tokens)
 });
 
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// No request interceptor needed - cookies are sent automatically
 
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason: unknown) => void }> = [];
@@ -36,7 +29,6 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 export function clearSession(): void {
-  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
 }
 
@@ -50,28 +42,20 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            if (token) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            return api(originalRequest);
-          })
+          .then(() => api(originalRequest))
           .catch((err) => Promise.reject(err));
-        }
+      }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        const refreshRes = await axios.post<{ data: { accessToken: string } }>(
+        await axios.post(
           `${API_BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
-        const newAccessToken = refreshRes.data.data.accessToken;
-        localStorage.setItem(TOKEN_KEY, newAccessToken);
-        processQueue(null, newAccessToken);
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);

@@ -33,8 +33,8 @@ function qs(params?: object): string {
 }
 
 export const authApi = {
-  async login(email: string, password: string): Promise<LoginResponse> {
-    return unwrap(api.post<ApiResponse<LoginResponse>>("/auth/login", { email, password }));
+  async login(email: string, password: string): Promise<{ user: User }> {
+    return unwrap(api.post<ApiResponse<{ user: User }>>("/auth/login", { email, password }));
   },
 };
 

@@ -3,7 +3,6 @@ import { Router } from "express";
 import { login, refresh, logout } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate.middleware";
 import { loginSchema } from "../validators/auth.validator";
-import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -67,11 +66,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post(
-  "/login",
-  validate(loginSchema),
-  login
-);
+router.post("/login", validate(loginSchema), login);
 
 /**
  * @swagger

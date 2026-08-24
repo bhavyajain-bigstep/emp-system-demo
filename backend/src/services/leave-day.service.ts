@@ -1,10 +1,6 @@
 import { Holiday, IHoliday } from "../models/holiday.model";
 import { env } from "../config/env";
-import {
-  getLocalDateString,
-  getLocalDayOfWeek,
-  isWeekendDay,
-} from "../utils/timezone.util";
+import { getLocalDateString, isWeekendDay } from "../utils/timezone.util";
 
 export interface CalculateLeaveDaysOptions {
   fromDate: Date | string;
@@ -38,7 +34,7 @@ export async function calculateLeaveDays(
   excludeWeekends = true,
   excludeMandatoryHolidays = true,
   timezone = "Asia/Kolkata",
-  excludeOptionalHolidays = false
+  excludeOptionalHolidays = false,
 ): Promise<number> {
   const result = await calculateLeaveDaysDetailed({
     fromDate,
@@ -54,7 +50,7 @@ export async function calculateLeaveDays(
 }
 
 export async function calculateLeaveDaysDetailed(
-  options: CalculateLeaveDaysOptions
+  options: CalculateLeaveDaysOptions,
 ): Promise<LeaveDaysCalculationResult> {
   const {
     fromDate,

@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { authApi } from "@/lib/endpoints";
-import { clearSession, TOKEN_KEY, USER_KEY } from "@/lib/api";
+import { clearSession, USER_KEY } from "@/lib/api";
 import type { Role, User } from "@/types";
 
 interface AuthContextValue {
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await authApi.login(email, password);
-    localStorage.setItem(TOKEN_KEY, result.accessToken);
+    // Access token is now in HttpOnly cookie, only store user
     localStorage.setItem(USER_KEY, JSON.stringify(result.user));
     setUser(result.user);
   }, []);

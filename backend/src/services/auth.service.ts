@@ -6,7 +6,11 @@ import {
   updateRefreshTokenHash,
 } from "../repositories/employee.repository";
 import { AppError } from "../errors/app-error";
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../utils/jwt";
 import { env } from "../config/env";
 
 export const loginService = async (email: string, password: string) => {
@@ -17,7 +21,11 @@ export const loginService = async (email: string, password: string) => {
   }
 
   if (employee.status !== "ACTIVE") {
-    throw new AppError("Employee account is not active", 403, "ACCOUNT_INACTIVE");
+    throw new AppError(
+      "Employee account is not active",
+      403,
+      "ACCOUNT_INACTIVE",
+    );
   }
 
   const passwordMatches = await compare(password, employee.passwordHash);
@@ -30,7 +38,9 @@ export const loginService = async (email: string, password: string) => {
     userId: employee._id.toString(),
     employeeCode: employee.employeeCode,
     role: employee.role,
-    departmentId: employee.departmentId ? employee.departmentId.toString() : undefined,
+    departmentId: employee.departmentId
+      ? employee.departmentId.toString()
+      : undefined,
     managerId: employee.managerId ? employee.managerId.toString() : undefined,
   });
 
@@ -75,7 +85,11 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
   }
 
   if (employee.status !== "ACTIVE") {
-    throw new AppError("Employee account is not active", 403, "ACCOUNT_INACTIVE");
+    throw new AppError(
+      "Employee account is not active",
+      403,
+      "ACCOUNT_INACTIVE",
+    );
   }
 
   // rotate tokens
@@ -83,11 +97,15 @@ export const refreshAccessTokenService = async (refreshToken: string) => {
     userId: employee._id.toString(),
     employeeCode: employee.employeeCode,
     role: employee.role,
-    departmentId: employee.departmentId ? employee.departmentId.toString() : undefined,
+    departmentId: employee.departmentId
+      ? employee.departmentId.toString()
+      : undefined,
     managerId: employee.managerId ? employee.managerId.toString() : undefined,
   });
 
-  const newRefreshToken = generateRefreshToken({ userId: employee._id.toString() });
+  const newRefreshToken = generateRefreshToken({
+    userId: employee._id.toString(),
+  });
   const newRefreshTokenHash = await hash(newRefreshToken, 12);
   await updateRefreshTokenHash(employee._id.toString(), newRefreshTokenHash);
 
