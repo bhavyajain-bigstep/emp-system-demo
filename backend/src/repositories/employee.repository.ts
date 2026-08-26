@@ -1,21 +1,12 @@
-import {
-  Employee,
-  IEmployee,
-} from "../models/employee.model";
+import { Employee, IEmployee } from "../models/employee.model";
 
 export const findEmployeeById = async (
   id: string,
-  includeRefreshTokenHash: boolean = false
+  includeRefreshTokenHash: boolean = false,
 ): Promise<IEmployee | null> => {
   const query = Employee.findById(id)
-    .populate(
-      "managerId",
-      "name employeeCode email"
-    )
-    .populate(
-      "departmentId",
-      "name"
-    );
+    .populate("managerId", "name employeeCode email")
+    .populate("departmentId", "name");
 
   if (includeRefreshTokenHash) {
     query.select("+refreshTokenHash");
@@ -25,7 +16,7 @@ export const findEmployeeById = async (
 };
 
 export const findEmployeeByEmail = async (
-  email: string
+  email: string,
 ): Promise<IEmployee | null> => {
   return Employee.findOne({
     email,
@@ -33,7 +24,7 @@ export const findEmployeeByEmail = async (
 };
 
 export const findEmployeeByCode = async (
-  employeeCode: string
+  employeeCode: string,
 ): Promise<IEmployee | null> => {
   return Employee.findOne({
     employeeCode,
@@ -43,31 +34,20 @@ export const findEmployeeByCode = async (
 export const findEmployees = async (
   filter: Record<string, unknown>,
   skip: number,
-  limit: number
+  limit: number,
 ) => {
-  const [
-    employees,
-    total,
-  ] = await Promise.all([
+  const [employees, total] = await Promise.all([
     Employee.find(filter)
       .select("-passwordHash")
-      .populate(
-        "managerId",
-        "name employeeCode"
-      )
-      .populate(
-        "departmentId",
-        "name"
-      )
+      .populate("managerId", "name employeeCode")
+      .populate("departmentId", "name")
       .skip(skip)
       .limit(limit)
       .sort({
         createdAt: -1,
       }),
 
-    Employee.countDocuments(
-      filter
-    ),
+    Employee.countDocuments(filter),
   ]);
 
   return {
@@ -77,32 +57,22 @@ export const findEmployees = async (
 };
 
 export const createEmployee = async (
-  data: Partial<IEmployee>
+  data: Partial<IEmployee>,
 ): Promise<IEmployee> => {
   return Employee.create(data);
 };
 
 export const updateEmployee = async (
   id: string,
-  data: Partial<IEmployee>
+  data: Partial<IEmployee>,
 ): Promise<IEmployee | null> => {
-  return Employee.findByIdAndUpdate(
-    id,
-    data,
-    {
-      new: true,
-      runValidators: true,
-    }
-  )
+  return Employee.findByIdAndUpdate(id, data, {
+    new: true,
+    runValidators: true,
+  })
     .select("-passwordHash")
-    .populate(
-      "managerId",
-      "name employeeCode"
-    )
-    .populate(
-      "departmentId",
-      "name"
-    );
+    .populate("managerId", "name employeeCode")
+    .populate("departmentId", "name");
 };
 
 export const findActiveEmployees = async (): Promise<IEmployee[]> => {
@@ -110,7 +80,7 @@ export const findActiveEmployees = async (): Promise<IEmployee[]> => {
 };
 
 export const countActiveEmployeesInDepartment = async (
-  departmentId: string
+  departmentId: string,
 ): Promise<number> => {
   return Employee.countDocuments({
     departmentId,
@@ -120,11 +90,11 @@ export const countActiveEmployeesInDepartment = async (
 
 export const updateRefreshTokenHash = async (
   id: string,
-  refreshTokenHash: string | null
+  refreshTokenHash: string | null,
 ): Promise<IEmployee | null> => {
   return Employee.findByIdAndUpdate(
     id,
     { refreshTokenHash },
-    { new: true }
+    { new: true },
   ).select("-passwordHash -refreshTokenHash");
 };

@@ -82,6 +82,7 @@ export function Navigation() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset menus on route change
     setOpenMenu(null);
     setUserMenuOpen(false);
   }, [location.pathname]);

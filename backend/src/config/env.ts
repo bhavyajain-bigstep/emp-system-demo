@@ -27,10 +27,15 @@ export const env = {
   NODE_ENV: optionalEnv("NODE_ENV", "development"),
   PORT: parseInt(optionalEnv("PORT", "5000"), 10),
 
-  MONGO_URI: optionalEnv("MONGO_URI", "mongodb://127.0.0.1:27017/leave_attendance_db"),
+  MONGO_URI: optionalEnv(
+    "MONGO_URI",
+    "mongodb://127.0.0.1:27017/leave_attendance_db",
+  ),
 
   // In production JWT_SECRET must be provided via env; no default.
-  JWT_SECRET: isProd ? requireEnv("JWT_SECRET") : optionalEnv("JWT_SECRET", "dev_secret_change_me"),
+  JWT_SECRET: isProd
+    ? requireEnv("JWT_SECRET")
+    : optionalEnv("JWT_SECRET", "dev_secret_change_me"),
   JWT_EXPIRES_IN: optionalEnv("JWT_EXPIRES_IN", "15m"),
   JWT_REFRESH_EXPIRES_IN: optionalEnv("JWT_REFRESH_EXPIRES_IN", "7d"),
 
@@ -38,11 +43,11 @@ export const env = {
 
   ATTENDANCE_LATE_CUTOFF_MINUTES: parseInt(
     optionalEnv("ATTENDANCE_LATE_CUTOFF_MINUTES", "570"),
-    10
+    10,
   ),
   ATTENDANCE_MIN_MINUTES_FULL_DAY: parseInt(
     optionalEnv("ATTENDANCE_MIN_MINUTES_FULL_DAY", "240"),
-    10
+    10,
   ),
   ATTENDANCE_WEEKEND_DAYS: optionalEnv("ATTENDANCE_WEEKEND_DAYS", "0,6"),
 };

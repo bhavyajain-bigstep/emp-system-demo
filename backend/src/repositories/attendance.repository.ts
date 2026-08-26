@@ -2,7 +2,7 @@ import { Attendance, IAttendance } from "../models/attendance.model";
 
 export const findAttendanceByEmployeeAndDate = async (
   employeeId: string,
-  date: string
+  date: string,
 ): Promise<IAttendance | null> => {
   return Attendance.findOne({ employeeId, date });
 };
@@ -10,7 +10,7 @@ export const findAttendanceByEmployeeAndDate = async (
 export const findAttendanceRecords = async (
   filter: Record<string, unknown>,
   skip: number,
-  limit: number
+  limit: number,
 ) => {
   const [records, total] = await Promise.all([
     Attendance.find(filter)
@@ -28,7 +28,7 @@ export const findAttendanceRecords = async (
 export const findAttendanceInRange = async (
   employeeId: string,
   fromDate: string,
-  toDate: string
+  toDate: string,
 ): Promise<IAttendance[]> => {
   return Attendance.find({
     employeeId,
@@ -37,14 +37,14 @@ export const findAttendanceInRange = async (
 };
 
 export const createAttendance = async (
-  data: Partial<IAttendance>
+  data: Partial<IAttendance>,
 ): Promise<IAttendance> => {
   return Attendance.create(data);
 };
 
 export const updateAttendance = async (
   id: string,
-  data: Partial<IAttendance>
+  data: Partial<IAttendance>,
 ): Promise<IAttendance | null> => {
   return Attendance.findByIdAndUpdate(id, data, {
     new: true,

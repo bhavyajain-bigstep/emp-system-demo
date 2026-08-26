@@ -47,7 +47,6 @@ export const loginService = async (email: string, password: string) => {
   const refreshToken = generateRefreshToken({
     userId: employee._id.toString(),
   });
-
   const refreshTokenHash = await hash(refreshToken, 12);
   await updateRefreshTokenHash(employee._id.toString(), refreshTokenHash);
 

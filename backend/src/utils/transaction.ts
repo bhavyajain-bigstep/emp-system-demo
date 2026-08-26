@@ -2,13 +2,6 @@ import mongoose from "mongoose";
 
 let cachedSupport: boolean | null = null;
 
-/**
- * Detects whether the connected MongoDB deployment supports
- * multi-document transactions (replica set or mongos).
- *
- * Standalone `mongod` instances (e.g. a Homebrew install without
- * replication enabled) do not support transactions.
- */
 async function supportsTransactions(): Promise<boolean> {
   if (cachedSupport !== null) {
     return cachedSupport;
@@ -27,16 +20,8 @@ async function supportsTransactions(): Promise<boolean> {
   return cachedSupport;
 }
 
-/**
- * Runs the provided callback inside a MongoDB transaction when the
- * deployment supports it.
- *
- * On deployments that do not support transactions (standalone dev
- * databases), the callback runs without a session so the workflow still
- * works — without atomicity guarantees.
- */
 export async function runInTransaction<T>(
-  fn: (session: mongoose.ClientSession | undefined) => Promise<T>
+  fn: (session: mongoose.ClientSession | undefined) => Promise<T>,
 ): Promise<T> {
   if (!(await supportsTransactions())) {
     return fn(undefined);

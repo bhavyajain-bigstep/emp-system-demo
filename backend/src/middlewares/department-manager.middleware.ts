@@ -8,20 +8,20 @@ import { Department } from "../models/department.model";
 export const authorizeDepartmentManager = async (
   req: AuthenticatedRequest,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const departmentId = req.params.id as string;
 
     if (!departmentId || !Types.ObjectId.isValid(departmentId)) {
       return next(
-        new AppError("Invalid department ID", 400, "INVALID_DEPARTMENT_ID")
+        new AppError("Invalid department ID", 400, "INVALID_DEPARTMENT_ID"),
       );
     }
 
     if (!req.user) {
       return next(
-        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED")
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
@@ -29,7 +29,7 @@ export const authorizeDepartmentManager = async (
 
     if (!department) {
       return next(
-        new AppError("Department not found", 404, "DEPARTMENT_NOT_FOUND")
+        new AppError("Department not found", 404, "DEPARTMENT_NOT_FOUND"),
       );
     }
 
@@ -42,8 +42,8 @@ export const authorizeDepartmentManager = async (
         new AppError(
           "You are not authorized to update this department",
           403,
-          "NOT_DEPARTMENT_MANAGER"
-        )
+          "NOT_DEPARTMENT_MANAGER",
+        ),
       );
     }
 

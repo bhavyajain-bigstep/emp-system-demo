@@ -8,12 +8,15 @@ export const errorHandler = (
   err: any,
   req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ) => {
   const requestId = req.headers["x-request-id"] as string | undefined;
 
   if (env.NODE_ENV !== "test") {
-    logger.error({ err, requestId, path: req.path, method: req.method }, "Unhandled error");
+    logger.error(
+      { err, requestId, path: req.path, method: req.method },
+      "Unhandled error",
+    );
   }
 
   if (err instanceof AppError) {
@@ -28,7 +31,11 @@ export const errorHandler = (
   }
 
   // Zod validation error
-  if (err?.name === "ZodError" || err?.errors?.fieldErrors || err?.errors?.formErrors) {
+  if (
+    err?.name === "ZodError" ||
+    err?.errors?.fieldErrors ||
+    err?.errors?.formErrors
+  ) {
     return res.status(400).json({
       success: false,
       message: err.message || "Validation failed",

@@ -25,7 +25,7 @@ export async function connectDB(): Promise<void> {
     isConnected = true;
 
     console.log(
-      `MongoDB connected: ${conn.connection.host}/${conn.connection.name} (${env.NODE_ENV})`
+      `MongoDB connected: ${conn.connection.host}/${conn.connection.name} (${env.NODE_ENV})`,
     );
   } catch (error) {
     console.error("MongoDB connection error:", error);

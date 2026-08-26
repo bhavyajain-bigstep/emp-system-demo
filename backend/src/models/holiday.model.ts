@@ -1,9 +1,4 @@
-import {
-  Document,
-  Schema,
-  Types,
-  model,
-} from "mongoose";
+import { Document, Schema, Types, model } from "mongoose";
 
 export interface IHoliday extends Document {
   date: Date;
@@ -19,43 +14,42 @@ export interface IHoliday extends Document {
   updatedAt: Date;
 }
 
-const holidaySchema =
-  new Schema<IHoliday>(
-    {
-      date: {
-        type: Date,
-        required: true,
-      },
-
-      name: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 200,
-      },
-
-      optional: {
-        type: Boolean,
-        required: true,
-        default: false,
-      },
-
-      description: {
-        type: String,
-        trim: true,
-        maxlength: 1000,
-      },
-
-      createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: "Employee",
-        required: true,
-      },
+const holidaySchema = new Schema<IHoliday>(
+  {
+    date: {
+      type: Date,
+      required: true,
     },
-    {
-      timestamps: true,
-    }
-  );
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+
+    optional: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Employee",
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
 /*
  * Only one holiday can exist
@@ -67,11 +61,7 @@ holidaySchema.index(
   },
   {
     unique: true,
-  }
+  },
 );
 
-export const Holiday =
-  model<IHoliday>(
-    "Holiday",
-    holidaySchema
-  );
+export const Holiday = model<IHoliday>("Holiday", holidaySchema);

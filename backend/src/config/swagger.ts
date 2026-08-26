@@ -23,8 +23,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT",
-        description:
-          "JWT authentication token.",
+        description: "JWT authentication token.",
       },
     },
 
@@ -100,12 +99,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
 
           role: {
             type: "string",
-            enum: [
-              "EMPLOYEE",
-              "MANAGER",
-              "HR",
-              "ADMIN",
-            ],
+            enum: ["EMPLOYEE", "MANAGER", "HR", "ADMIN"],
             example: "EMPLOYEE",
           },
 
@@ -126,11 +120,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
 
           status: {
             type: "string",
-            enum: [
-              "ACTIVE",
-              "INACTIVE",
-              "SUSPENDED",
-            ],
+            enum: ["ACTIVE", "INACTIVE", "SUSPENDED"],
             example: "ACTIVE",
           },
 
@@ -170,10 +160,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
 
           status: {
             type: "string",
-            enum: [
-              "ACTIVE",
-              "ARCHIVED",
-            ],
+            enum: ["ACTIVE", "ARCHIVED"],
             example: "ACTIVE",
           },
 
@@ -218,13 +205,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
 
           status: {
             type: "string",
-            enum: [
-              "PRESENT",
-              "LATE",
-              "HALF_DAY",
-              "ABSENT",
-              "LEAVE",
-            ],
+            enum: ["PRESENT", "LATE", "HALF_DAY", "ABSENT", "LEAVE"],
             example: "PRESENT",
           },
 
@@ -383,10 +364,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
 
           status: {
             type: "string",
-            enum: [
-              "ACTIVE",
-              "INACTIVE",
-            ],
+            enum: ["ACTIVE", "INACTIVE"],
             example: "ACTIVE",
           },
         },
@@ -429,12 +407,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
 
           status: {
             type: "string",
-            enum: [
-              "PENDING",
-              "APPROVED",
-              "REJECTED",
-              "CANCELLED",
-            ],
+            enum: ["PENDING", "APPROVED", "REJECTED", "CANCELLED"],
             example: "PENDING",
           },
 
@@ -586,11 +559,7 @@ const swaggerDefinition: swaggerJSDoc.SwaggerDefinition = {
 const options: swaggerJSDoc.Options = {
   definition: swaggerDefinition,
 
-  apis: [
-    "./src/routes/*.ts",
-    "./dist/routes/*.js",
-  ],
+  apis: ["./src/routes/*.ts", "./dist/routes/*.js"],
 };
 
-export const swaggerSpec =
-  swaggerJSDoc(options);
+export const swaggerSpec = swaggerJSDoc(options);

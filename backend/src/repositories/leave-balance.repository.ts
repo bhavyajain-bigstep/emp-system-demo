@@ -1,137 +1,106 @@
-import {
-  ILeaveBalance,
-  LeaveBalance,
-} from "../models/leave-balance.model";
+import { ILeaveBalance, LeaveBalance } from "../models/leave-balance.model";
 
 import { ClientSession, Types } from "mongoose";
 
-export const findAllBalances =
-  async (
-    page = 1,
-    limit = 20
-  ): Promise<{ records: ILeaveBalance[]; total: number }> => {
-    const skip = (page - 1) * limit;
+export const findAllBalances = async (
+  page = 1,
+  limit = 20,
+): Promise<{ records: ILeaveBalance[]; total: number }> => {
+  const skip = (page - 1) * limit;
 
-    const [records, total] = await Promise.all([
-      LeaveBalance.find()
-        .populate(
-          "employeeId",
-          "employeeCode name email"
-        )
-        .populate(
-          "leaveTypeId",
-          "name code annualQuota rules"
-        )
-        .sort({
-          year: -1,
-        })
-        .skip(skip)
-        .limit(limit),
-
-      LeaveBalance.countDocuments(),
-    ]);
-
-    return { records, total };
-  };
-
-export const findBalancesByEmployee =
-  async (
-    employeeId: string,
-    year?: number
-  ): Promise<ILeaveBalance[]> => {
-    const filter: {
-      employeeId: Types.ObjectId;
-      year?: number;
-    } = {
-      employeeId:
-        new Types.ObjectId(employeeId),
-    };
-
-    if (year) {
-      filter.year = year;
-    }
-
-    return LeaveBalance.find(filter)
-      .populate(
-        "leaveTypeId",
-        "name code annualQuota rules"
-      )
+  const [records, total] = await Promise.all([
+    LeaveBalance.find()
+      .populate("employeeId", "employeeCode name email")
+      .populate("leaveTypeId", "name code annualQuota rules")
       .sort({
         year: -1,
-        leaveTypeId: 1,
-      });
+      })
+      .skip(skip)
+      .limit(limit),
+
+    LeaveBalance.countDocuments(),
+  ]);
+
+  return { records, total };
+};
+
+export const findBalancesByEmployee = async (
+  employeeId: string,
+  year?: number,
+): Promise<ILeaveBalance[]> => {
+  const filter: {
+    employeeId: Types.ObjectId;
+    year?: number;
+  } = {
+    employeeId: new Types.ObjectId(employeeId),
   };
 
-export const findBalanceById =
-  async (
-    id: string
-  ): Promise<ILeaveBalance | null> => {
-    return LeaveBalance.findById(id)
-      .populate(
-        "employeeId",
-        "employeeCode name email"
-      )
-      .populate(
-        "leaveTypeId",
-        "name code annualQuota rules"
-      );
-  };
+  if (year) {
+    filter.year = year;
+  }
 
-export const findBalance =
-  async (
-    employeeId: string,
-    leaveTypeId: string,
-    year: number,
-    session?: ClientSession
-  ): Promise<ILeaveBalance | null> => {
-    const query = LeaveBalance.findOne({
-      employeeId:
-        new Types.ObjectId(employeeId),
-      leaveTypeId:
-        new Types.ObjectId(leaveTypeId),
-      year,
+  return LeaveBalance.find(filter)
+    .populate("leaveTypeId", "name code annualQuota rules")
+    .sort({
+      year: -1,
+      leaveTypeId: 1,
     });
+};
 
-    if (session) {
-      query.session(session);
-    }
+export const findBalanceById = async (
+  id: string,
+): Promise<ILeaveBalance | null> => {
+  return LeaveBalance.findById(id)
+    .populate("employeeId", "employeeCode name email")
+    .populate("leaveTypeId", "name code annualQuota rules");
+};
 
-    return query;
-  };
+export const findBalance = async (
+  employeeId: string,
+  leaveTypeId: string,
+  year: number,
+  session?: ClientSession,
+): Promise<ILeaveBalance | null> => {
+  const query = LeaveBalance.findOne({
+    employeeId: new Types.ObjectId(employeeId),
+    leaveTypeId: new Types.ObjectId(leaveTypeId),
+    year,
+  });
 
-export const createBalance =
-  async (
-    data: Partial<ILeaveBalance>,
-    session?: ClientSession
-  ): Promise<ILeaveBalance> => {
-    if (session) {
-      const [balance] = await LeaveBalance.create([data], { session });
-      return balance;
-    }
-    return LeaveBalance.create(data);
-  };
+  if (session) {
+    query.session(session);
+  }
 
-export const updateBalance =
-  async (
-    id: string,
-    data: Partial<ILeaveBalance>,
-    session?: ClientSession
-  ): Promise<ILeaveBalance | null> => {
-    return LeaveBalance.findByIdAndUpdate(
-      id,
-      data,
-      {
-        new: true,
-        runValidators: true,
-        session,
-      }
-    );
-  };
+  return query;
+};
+
+export const createBalance = async (
+  data: Partial<ILeaveBalance>,
+  session?: ClientSession,
+): Promise<ILeaveBalance> => {
+  if (session) {
+    const [balance] = await LeaveBalance.create([data], { session });
+    return balance;
+  }
+  return LeaveBalance.create(data);
+};
+
+export const updateBalance = async (
+  id: string,
+  data: Partial<ILeaveBalance>,
+  session?: ClientSession,
+): Promise<ILeaveBalance | null> => {
+  return LeaveBalance.findByIdAndUpdate(id, data, {
+    new: true,
+    runValidators: true,
+    session,
+  });
+};
 
 export const deductBalance = async (
   balanceId: string,
   days: number,
-  session?: ClientSession
+  session?: ClientSession,
 ): Promise<ILeaveBalance | null> => {
   return LeaveBalance.findByIdAndUpdate(
     balanceId,
@@ -145,14 +114,14 @@ export const deductBalance = async (
       new: true,
       runValidators: true,
       session,
-    }
+    },
   );
 };
 
 export const restoreBalance = async (
   balanceId: string,
   days: number,
-  session?: ClientSession
+  session?: ClientSession,
 ): Promise<ILeaveBalance | null> => {
   return LeaveBalance.findByIdAndUpdate(
     balanceId,
@@ -166,6 +135,6 @@ export const restoreBalance = async (
       new: true,
       runValidators: true,
       session,
-    }
+    },
   );
 };

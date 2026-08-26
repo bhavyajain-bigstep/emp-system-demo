@@ -1,9 +1,4 @@
-import {
-  Document,
-  Schema,
-  Types,
-  model,
-} from "mongoose";
+import { Document, Schema, Types, model } from "mongoose";
 
 export type LeaveRequestStatus =
   | "PENDING"
@@ -11,8 +6,7 @@ export type LeaveRequestStatus =
   | "REJECTED"
   | "CANCELLED";
 
-export interface ILeaveRequest
-  extends Document {
+export interface ILeaveRequest extends Document {
   employeeId: Types.ObjectId;
   leaveTypeId: Types.ObjectId;
 
@@ -40,97 +34,91 @@ export interface ILeaveRequest
   updatedAt: Date;
 }
 
-const leaveRequestSchema =
-  new Schema<ILeaveRequest>(
-    {
-      employeeId: {
-        type: Schema.Types.ObjectId,
-        ref: "Employee",
-        required: true,
-        index: true,
-      },
-
-      leaveTypeId: {
-        type: Schema.Types.ObjectId,
-        ref: "LeaveType",
-        required: true,
-        index: true,
-      },
-
-      fromDate: {
-        type: Date,
-        required: true,
-        index: true,
-      },
-
-      toDate: {
-        type: Date,
-        required: true,
-        index: true,
-      },
-
-      days: {
-        type: Number,
-        required: true,
-        min: 0.5,
-      },
-
-      reason: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 1000,
-      },
-
-      status: {
-        type: String,
-        enum: [
-          "PENDING",
-          "APPROVED",
-          "REJECTED",
-          "CANCELLED",
-        ],
-        default: "PENDING",
-        index: true,
-      },
-
-      approvedBy: {
-        type: Schema.Types.ObjectId,
-        ref: "Employee",
-      },
-
-      approvedAt: {
-        type: Date,
-      },
-
-      rejectedBy: {
-        type: Schema.Types.ObjectId,
-        ref: "Employee",
-      },
-
-      rejectedAt: {
-        type: Date,
-      },
-
-      rejectionReason: {
-        type: String,
-        trim: true,
-        maxlength: 1000,
-      },
-
-      cancelledAt: {
-        type: Date,
-      },
-
-      cancelledBy: {
-        type: Schema.Types.ObjectId,
-        ref: "Employee",
-      },
+const leaveRequestSchema = new Schema<ILeaveRequest>(
+  {
+    employeeId: {
+      type: Schema.Types.ObjectId,
+      ref: "Employee",
+      required: true,
+      index: true,
     },
-    {
-      timestamps: true,
-    }
-  );
+
+    leaveTypeId: {
+      type: Schema.Types.ObjectId,
+      ref: "LeaveType",
+      required: true,
+      index: true,
+    },
+
+    fromDate: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+
+    toDate: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+
+    days: {
+      type: Number,
+      required: true,
+      min: 0.5,
+    },
+
+    reason: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+
+    status: {
+      type: String,
+      enum: ["PENDING", "APPROVED", "REJECTED", "CANCELLED"],
+      default: "PENDING",
+      index: true,
+    },
+
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Employee",
+    },
+
+    approvedAt: {
+      type: Date,
+    },
+
+    rejectedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Employee",
+    },
+
+    rejectedAt: {
+      type: Date,
+    },
+
+    rejectionReason: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+
+    cancelledAt: {
+      type: Date,
+    },
+
+    cancelledBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Employee",
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
 leaveRequestSchema.index({
   employeeId: 1,
@@ -143,8 +131,7 @@ leaveRequestSchema.index({
   fromDate: 1,
 });
 
-export const LeaveRequest =
-  model<ILeaveRequest>(
-    "LeaveRequest",
-    leaveRequestSchema
-  );
+export const LeaveRequest = model<ILeaveRequest>(
+  "LeaveRequest",
+  leaveRequestSchema,
+);

@@ -54,7 +54,7 @@ const attendanceSchema = new Schema<IAttendance>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // One attendance record per employee per local calendar day — this is what

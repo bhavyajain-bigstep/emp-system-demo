@@ -36,12 +36,17 @@ const assertValidEmployee = async (employeeId: string) => {
   return employee;
 };
 
-const isWorkingDay = async (dateStr: string, timezone: string): Promise<{ isWorking: boolean; reason?: string }> => {
-  const dayOfWeek = new Date(Date.UTC(
-    Number(dateStr.slice(0, 4)),
-    Number(dateStr.slice(5, 7)) - 1,
-    Number(dateStr.slice(8, 10))
-  )).getUTCDay();
+const isWorkingDay = async (
+  dateStr: string,
+  timezone: string,
+): Promise<{ isWorking: boolean; reason?: string }> => {
+  const dayOfWeek = new Date(
+    Date.UTC(
+      Number(dateStr.slice(0, 4)),
+      Number(dateStr.slice(5, 7)) - 1,
+      Number(dateStr.slice(8, 10)),
+    ),
+  ).getUTCDay();
 
   if (WEEKEND_DAYS.includes(dayOfWeek)) {
     return { isWorking: false, reason: "weekend" };
@@ -70,26 +75,23 @@ export const checkInService = async (employeeId: string) => {
     throw new AppError(
       `Cannot check in on a ${workingDayCheck.reason}`,
       400,
-      "NOT_A_WORKING_DAY"
+      "NOT_A_WORKING_DAY",
     );
   }
 
-  const existing = await findAttendanceByEmployeeAndDate(
-    employeeId,
-    localDate
-  );
+  const existing = await findAttendanceByEmployeeAndDate(employeeId, localDate);
 
   if (existing) {
     throw new AppError(
       "Employee has already checked in for today",
       409,
-      "ALREADY_CHECKED_IN"
+      "ALREADY_CHECKED_IN",
     );
   }
 
   const minutesSinceMidnight = getLocalMinutesSinceMidnight(
     now,
-    employee.timezone
+    employee.timezone,
   );
 
   const status =
@@ -114,24 +116,17 @@ export const checkOutService = async (employeeId: string) => {
   const now = new Date();
   const localDate = getLocalDateString(now, employee.timezone);
 
-  const record = await findAttendanceByEmployeeAndDate(
-    employeeId,
-    localDate
-  );
+  const record = await findAttendanceByEmployeeAndDate(employeeId, localDate);
 
   if (!record) {
-    throw new AppError(
-      "No check-in found for today",
-      404,
-      "NO_CHECKIN_FOUND"
-    );
+    throw new AppError("No check-in found for today", 404, "NO_CHECKIN_FOUND");
   }
 
   if (record.checkOutAt) {
     throw new AppError(
       "Employee has already checked out for today",
       409,
-      "ALREADY_CHECKED_OUT"
+      "ALREADY_CHECKED_OUT",
     );
   }
 
@@ -139,12 +134,11 @@ export const checkOutService = async (employeeId: string) => {
     throw new AppError(
       "Check-out time cannot be before check-in time",
       400,
-      "INVALID_CHECKOUT_TIME"
+      "INVALID_CHECKOUT_TIME",
     );
   }
 
-  const workedMinutes =
-    (now.getTime() - record.checkInAt.getTime()) / 60000;
+  const workedMinutes = (now.getTime() - record.checkInAt.getTime()) / 60000;
 
   const status =
     workedMinutes < env.ATTENDANCE_MIN_MINUTES_FULL_DAY
@@ -165,7 +159,7 @@ export const getAttendanceListService = async (
   employeeId?: string,
   status?: string,
   from?: string,
-  to?: string
+  to?: string,
 ) => {
   const filter: Record<string, unknown> = {};
 
@@ -193,14 +187,14 @@ export const getAttendanceListService = async (
 export const getMonthlyAttendanceSummaryService = async (
   employeeId: string,
   year: number,
-  month: number // 1-12
+  month: number, // 1-12
 ) => {
   const employee = await assertValidEmployee(employeeId);
 
   const fromDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const toDate = `${year}-${String(month).padStart(2, "0")}-${String(
-    lastDay
+    lastDay,
   ).padStart(2, "0")}`;
 
   const records = await findAttendanceInRange(employeeId, fromDate, toDate);
@@ -215,7 +209,7 @@ export const getMonthlyAttendanceSummaryService = async (
   });
 
   const holidayDateStrings = holidays.map((h) =>
-    getLocalDateString(h.date, employee.timezone)
+    getLocalDateString(h.date, employee.timezone),
   );
 
   // Fetch approved leaves for this month
@@ -229,7 +223,10 @@ export const getMonthlyAttendanceSummaryService = async (
   // Build a set of dates the employee is on leave
   const leaveDates = new Set<string>();
   for (const leave of approvedLeaves) {
-    const from = getLocalDateString(new Date(leave.fromDate), employee.timezone);
+    const from = getLocalDateString(
+      new Date(leave.fromDate),
+      employee.timezone,
+    );
     const to = getLocalDateString(new Date(leave.toDate), employee.timezone);
     let current = from;
     while (current <= to) {
@@ -247,7 +244,7 @@ export const getMonthlyAttendanceSummaryService = async (
 
   for (let day = 1; day <= lastDay; day++) {
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
-      day
+      day,
     ).padStart(2, "0")}`;
 
     const isWeekend = isWeekendDay(dateStr, WEEKEND_DAYS);

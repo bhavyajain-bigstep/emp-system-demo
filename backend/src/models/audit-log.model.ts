@@ -52,7 +52,7 @@ const auditLogSchema = new Schema<IAuditLog>(
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
-  }
+  },
 );
 
 auditLogSchema.index({ entityType: 1, entityId: 1 });

@@ -166,4 +166,3 @@ router.get("/:employeeId/summary", getMonthlySummary);
 router.get("/", getAttendanceList);
 
 export default router;
-

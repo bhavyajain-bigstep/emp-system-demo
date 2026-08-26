@@ -20,9 +20,7 @@ export const authenticate = (
     // Fallback to HttpOnly cookie
     const cookieToken = req.cookies?.accessToken;
 
-    const token = authorization
-      ? authorization.split(" ")[1]
-      : cookieToken;
+    const token = authorization ? authorization.split(" ")[1] : cookieToken;
 
     if (!token) {
       throw new AppError(
