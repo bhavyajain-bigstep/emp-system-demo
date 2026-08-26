@@ -83,6 +83,14 @@ app.use(globalLimiter);
 // Request logging
 app.use(httpLogger);
 
+// Root route for Render health checks
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Employee Leave Management API is running",
+  });
+});
+
 // Health check with DB verification
 app.get("/health", async (_req, res) => {
   const mongoose = await import("mongoose");

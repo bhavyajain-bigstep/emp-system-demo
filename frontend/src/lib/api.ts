@@ -37,7 +37,11 @@ api.interceptors.response.use(
   async (error: AxiosError<ApiErrorBody>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh for auth endpoints (login, register, refresh, logout)
+    const authEndpoints = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"];
+    const isAuthEndpoint = authEndpoints.some((ep) => originalRequest.url?.includes(ep));
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
